@@ -83,6 +83,12 @@ export interface GetAllProduitsOptions {
   orderBy?: 'created_at' | 'prix' | 'nom';
   /** Sens du tri (défaut : false = DESC) */
   ascending?: boolean;
+  /** Prix minimum (FCFA, inclusif) */
+  prixMin?: number;
+  /** Prix maximum (FCFA, inclusif) */
+  prixMax?: number;
+  /** Recherche full-text sur nom / description_courte */
+  recherche?: string;
 }
 
 // =============================================================================

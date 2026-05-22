@@ -100,6 +100,9 @@ export const getAllProduits = cache(async (
     offset     = 0,
     orderBy    = 'created_at',
     ascending  = false,
+    prixMin,
+    prixMax,
+    recherche,
   } = options;
 
   const supabase = await createClient();
@@ -115,6 +118,14 @@ export const getAllProduits = cache(async (
 
   if (categorie_id !== undefined) query = query.eq('categorie_id', categorie_id);
   if (vedette      !== undefined) query = query.eq('vedette', vedette);
+  if (prixMin      !== undefined) query = query.gte('prix', prixMin);
+  if (prixMax      !== undefined) query = query.lte('prix', prixMax);
+  if (recherche    !== undefined && recherche.trim() !== '') {
+    // Recherche ILIKE sur nom + description_courte (fallback du FTS)
+    query = query.or(
+      `nom.ilike.%${recherche.trim()}%,description_courte.ilike.%${recherche.trim()}%`,
+    );
+  }
 
   const { data: rawData, error, count } = await query;
 
