@@ -1,29 +1,107 @@
 @import 'tailwindcss';
 @config '../../tailwind.config.ts';
 
-/* Mathieu&Co — tokens alignés sur tailwind.config.ts */
+/* ─────────────────────────────────────────────────────────
+   Mathieu&Co — Design Tokens (Tailwind v4 @theme inline)
+   Miroir exact de tailwind.config.ts pour accès CSS natif
+   ───────────────────────────────────────────────────────── */
 @theme inline {
-  --color-noir: #151515;
-  --color-blanc: #ffffff;
-  --color-beige: #f2ede8;
-  --color-beige2: #eae3da;
-  --color-beige3: #dad1c6;
-  --color-or: #b8893a;
-  --color-or-dark: #8a6030;
-  --color-gris: #84827f;
-  --color-gris-cl: #e0deda;
-  --color-rouge: #c84030;
-  --color-vert: #3a8a3a;
+  /* ── Couleurs ───────────────────────────────────────── */
+  --color-noir:        #151515;
+  --color-noir-soft:   #2a2a2a;
+  --color-blanc:       #ffffff;
 
-  --font-sans: var(--font-inter), Arial, sans-serif;
+  --color-beige:       #f2ede8;
+  --color-beige2:      #eae3da;
+  --color-beige3:      #dad1c6;
+  --color-beige4:      #cec4b8;
+  --color-beige5:      #bfb4a6;
+
+  --color-or-light:    #d4a85c;
+  --color-or:          #b8893a;
+  --color-or-dark:     #8a6030;
+  --color-or-xdark:    #5e3e18;
+
+  --color-gris-cl:     #e0deda;
+  --color-gris:        #84827f;
+  --color-gris-dark:   #5a5856;
+
+  --color-rouge:       #c84030;
+  --color-rouge-light: #e85040;
+  --color-vert:        #3a8a3a;
+  --color-vert-light:  #4a9a4a;
+
+  /* ── Typographie ────────────────────────────────────── */
+  --font-sans:    var(--font-inter),     Arial,   sans-serif;
+  --font-display: var(--font-cormorant), Georgia, serif;
+
+  /* ── Ombres sémantiques ─────────────────────────────── */
+  --shadow-xs:          0 1px 4px 0 rgba(21,21,21,0.04);
+  --shadow-card:        0 2px 12px 0 rgba(21,21,21,0.06);
+  --shadow-card-hover:  0 8px 32px 0 rgba(21,21,21,0.12);
+  --shadow-nav:         0 1px 16px 0 rgba(21,21,21,0.06);
+  --shadow-modal:       0 24px 64px 0 rgba(21,21,21,0.18);
+  --shadow-or:          0 4px 20px 0 rgba(184,137,58,0.28);
+  --shadow-or-lg:       0 8px 32px 0 rgba(184,137,58,0.22);
+  --shadow-inner:       inset 0 2px 6px 0 rgba(21,21,21,0.06);
+
+  /* ── Easings ────────────────────────────────────────── */
+  --ease-spring:       cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo:     cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-expo:      cubic-bezier(0.95, 0.05, 0.795, 0.035);
+  --ease-in-out-back:  cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
+/* ─────────────────────────────────────────────────────────
+   Variables CSS globales
+   ───────────────────────────────────────────────────────── */
 :root {
   --background: #f2ede8;
   --foreground: #151515;
 }
 
+/* ─────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────── */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ─────────────────────────────────────────────────────────
+   Sélection de texte
+   ───────────────────────────────────────────────────────── */
+::selection {
+  background-color: rgb(from var(--color-or) r g b / 0.18);
+  color: var(--color-noir);
+}
+
+/* ─────────────────────────────────────────────────────────
+   Focus visible accessible
+   ───────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-or);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Scrollbar (Webkit)
+   ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-beige); }
+::-webkit-scrollbar-thumb { background: var(--color-beige3); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-gris); }
