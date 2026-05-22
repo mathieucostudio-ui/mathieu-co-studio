@@ -9,7 +9,8 @@
       "Bash(wc -c public/maquettes/Mathieu*.svg)",
       "Bash(dir \"public\\\\maquettes\\\\\" 2>/dev/null)",
       "Bash(git rm *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git commit *)"
     ]
   }
 }
