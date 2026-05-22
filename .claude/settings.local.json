@@ -10,7 +10,10 @@
       "Bash(dir \"public\\\\maquettes\\\\\" 2>/dev/null)",
       "Bash(git rm *)",
       "Bash(git stash *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(node -e \"const p = require\\('@supabase/ssr/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const p = require\\('@supabase/supabase-js/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const s = require\\('@supabase/ssr'\\); console.log\\(Object.keys\\(s\\)\\)\")"
     ]
   }
 }
