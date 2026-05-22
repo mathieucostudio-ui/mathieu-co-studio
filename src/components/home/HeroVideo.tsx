@@ -123,13 +123,6 @@ const ctaVariants: Variants = {
 // ─────────────────────────────────────────────────────────────────────────────
 //  Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-function formatTime(sec: number | undefined): string {
-  if (!sec || isNaN(sec)) return '0:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
 }
@@ -225,12 +218,9 @@ const ScrollIndicator = memo(function ScrollIndicator() {
 //  HeroVideo — composant principal
 // ─────────────────────────────────────────────────────────────────────────────
 export function HeroVideo() {
-  const [current,     setCurrent]     = useState(0);
-  const [isPlaying,   setIsPlaying]   = useState(true);
-  const [isMuted,     setIsMuted]     = useState(true);
-  const [progress,    setProgress]    = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration,    setDuration]    = useState(0);
+  const [current,   setCurrent]   = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted,   setIsMuted]   = useState(true);
 
   const videoRef  = useRef<HTMLVideoElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -244,26 +234,6 @@ export function HeroVideo() {
     }, SLIDE_DURATION);
     return () => clearTimeout(timerRef.current);
   }, [current]);
-
-  // ── Écouteurs de la vidéo ─────────────────────────────────────────────────
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const onTime = () => {
-      setCurrentTime(video.currentTime);
-      if (video.duration) setProgress((video.currentTime / video.duration) * 100);
-    };
-    const onMeta = () => setDuration(video.duration);
-
-    video.addEventListener('timeupdate', onTime);
-    video.addEventListener('loadedmetadata', onMeta);
-
-    return () => {
-      video.removeEventListener('timeupdate', onTime);
-      video.removeEventListener('loadedmetadata', onMeta);
-    };
-  }, []);
 
   // ── Contrôles vidéo ───────────────────────────────────────────────────────
   const togglePlay = useCallback(() => {
@@ -279,14 +249,6 @@ export function HeroVideo() {
     v.muted = !isMuted;
     setIsMuted((m) => !m);
   }, [isMuted]);
-
-  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const v = videoRef.current;
-    if (!v?.duration) return;
-    const rect  = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    v.currentTime = ratio * v.duration;
-  }, []);
 
   // ── Navigation slides ─────────────────────────────────────────────────────
   const goTo = useCallback((idx: number) => {
@@ -341,23 +303,6 @@ export function HeroVideo() {
         <div className="absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-[#020608]/50 to-transparent" />
         {/* Gauche → vignette (paint6_linear, couvre 40%) */}
         <div className="absolute inset-y-0 left-0 w-[40%] bg-gradient-to-r from-[#020608]/45 to-transparent" />
-      </div>
-
-      {/* ── Décor : lamelles vénitiennes (y=235-325 dans maquette) ────────── */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-[26%] z-10 hidden lg:flex items-end justify-center gap-[5px] overflow-hidden"
-        aria-hidden
-      >
-        {Array.from({ length: 26 }).map((_, i) => (
-          <div
-            key={i}
-            className="w-[3px] bg-noir/75"
-            style={{
-              height:  `${60 + (i % 3) * 8}px`,
-              opacity: 0.55 + (i % 5) * 0.07,
-            }}
-          />
-        ))}
       </div>
 
       {/* ── Flèches navigation pulsées ──────────────────────────────────────── */}
@@ -541,52 +486,6 @@ export function HeroVideo() {
             : <Play   size={11} strokeWidth={2} className="translate-x-[1px]" aria-hidden />
           }
         </button>
-
-        {/* ── Barre de progression + temps ── */}
-        <div className="flex flex-1 items-center gap-3 min-w-0">
-          {/* Timeline cliquable */}
-          <div
-            role="slider"
-            aria-label="Progression de la vidéo"
-            aria-valuenow={Math.round(progress)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            tabIndex={0}
-            onClick={handleSeek}
-            onKeyDown={(e) => {
-              const v = videoRef.current;
-              if (!v?.duration) return;
-              if (e.key === 'ArrowRight') v.currentTime = Math.min(v.duration, v.currentTime + 5);
-              if (e.key === 'ArrowLeft')  v.currentTime = Math.max(0, v.currentTime - 5);
-            }}
-            className="group relative h-[3px] flex-1 cursor-pointer rounded-full bg-blanc/15 focus-visible:outline-none"
-          >
-            {/* Remplissage doré */}
-            <div
-              className="absolute inset-y-0 left-0 rounded-full bg-or transition-[width] duration-100"
-              style={{ width: `${progress}%` }}
-              aria-hidden
-            />
-            {/* Curseur dot */}
-            <div
-              className={cn(
-                'absolute top-1/2 -translate-y-1/2 -translate-x-1/2',
-                'size-2.5 rounded-full bg-or',
-                'shadow-[0_0_0_2px_rgba(184,137,58,0.25)]',
-                'opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              )}
-              style={{ left: `${progress}%` }}
-              aria-hidden
-            />
-          </div>
-
-          {/* Temps écoulé / total */}
-          <span className="shrink-0 select-none font-sans text-[9.5px] tabular-nums text-blanc/30">
-            <span className="text-blanc/50">{formatTime(currentTime)}</span>
-            <span className="mx-1 text-blanc/15">/</span>
-            {formatTime(duration)}
-          </span>
-        </div>
 
         {/* ── Volume ── */}
         <button
