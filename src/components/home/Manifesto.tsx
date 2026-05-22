@@ -21,7 +21,7 @@ const QUOTE =
   'Nous ne décorons pas des espaces — nous composons\ndes œuvres destinées à être vécues.';
 
 const AUTHOR = {
-  name:  'Mathieu CODJO',
+  name:  'Mathieu GBEGBELEGBE',
   title: 'Fondateur & Directeur Artistique — Mathieu&Co Studio',
 };
 
