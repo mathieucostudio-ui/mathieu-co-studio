@@ -1,5 +1,10 @@
 import { setRequestLocale } from 'next-intl/server';
-import { HeroVideo } from '@/components/home';
+import {
+  HeroVideo,
+  StatsBar,
+  Manifesto,
+  Newsletter,
+} from '@/components/home';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -12,6 +17,9 @@ export default async function HomePage({ params }: Props) {
   return (
     <>
       <HeroVideo />
+      <StatsBar />
+      <Manifesto />
+      <Newsletter />
       {/* Sections suivantes à venir */}
     </>
   );
