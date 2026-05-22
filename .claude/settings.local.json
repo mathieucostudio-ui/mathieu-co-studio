@@ -15,7 +15,9 @@
       "Bash(node -e \"const p = require\\('@supabase/supabase-js/package.json'\\); console.log\\(p.version\\)\")",
       "Bash(node -e \"const s = require\\('@supabase/ssr'\\); console.log\\(Object.keys\\(s\\)\\)\")",
       "Bash(mkdir \"D:\\\\PROJET CLAUDE AI\\\\mathieu-co-studio\\\\mathieu-co-studio\\\\src\\\\components\\\\boutique\" 2>nul; mkdir \"D:\\\\PROJET CLAUDE AI\\\\mathieu-co-studio\\\\mathieu-co-studio\\\\src\\\\app\\\\[locale]\\\\boutique\" 2>nul; echo done)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(python -c ' *)",
+      "Bash(npx next *)"
     ]
   }
 }
