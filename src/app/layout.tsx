@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { getLocale } from 'next-intl/server';
 import './globals.css';
-import { Footer, Navbar } from '@/components/layout';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -15,17 +15,17 @@ export const metadata: Metadata = {
     "Studio d'architecture d'intérieur et boutique e-commerce — Cotonou, Bénin",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="fr" className={`${inter.variable} h-full antialiased`}>
+    <html lang={locale} className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans bg-beige text-noir">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );
