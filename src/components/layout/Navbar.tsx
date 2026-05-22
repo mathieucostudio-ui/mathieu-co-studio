@@ -52,7 +52,7 @@ export function Navbar() {
                   : 'text-blanc [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]',
               )}
             >
-              Mathieu<span className="text-or">&amp;</span>Co
+              {'Mathieu'}<span className="text-or">{'&'}</span>{'Co'}
             </span>
             <span
               className={cn(

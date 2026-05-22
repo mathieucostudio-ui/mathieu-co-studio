@@ -132,7 +132,7 @@ function FooterLogo() {
       aria-label="Mathieu&Co Studio — accueil"
     >
       <span className="text-[15px] font-semibold tracking-tight text-blanc transition-colors duration-200 group-hover:text-or">
-        Mathieu<span className="text-or">&amp;</span>Co
+        {'Mathieu'}<span className="text-or">{'&'}</span>{'Co'}
       </span>
       <span className="text-[9px] uppercase tracking-[0.22em] font-light text-gris leading-none">
         Studio
@@ -251,7 +251,7 @@ export function Footer() {
       <div className="border-t border-blanc/10">
         <div className="max-w-7xl mx-auto flex flex-col gap-4 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-10">
           <p className="text-xs text-gris">
-            © {year} Mathieu&amp;Co Studio. Tous droits réservés.
+            © {year} Mathieu{'&'}Co Studio. Tous droits réservés.
           </p>
           <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {LEGAL_LINKS.map(({ label, href }) => (
