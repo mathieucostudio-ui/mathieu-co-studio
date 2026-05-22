@@ -17,6 +17,7 @@
 import {
   useState,
   useEffect,
+  useRef,
   useCallback,
   useTransition,
   type ChangeEvent,
@@ -275,17 +276,25 @@ export function BoutiqueSidebar({ categories }: BoutiqueSidebarProps) {
     pushUrl({ ...s, statut: value, page: 1 });
   }, [setStatut, pushUrl]);
 
+  // Ref pour ignorer l'effet au premier rendu (évite navigation parasite au montage)
+  const isFirstRechercheRender = useRef(true);
+
   const handleRecherche = useCallback((value: string) => {
     setRecherche(value);
-    // Debounced via useEffect pour ne pas push à chaque frappe
+    // L'effet ci-dessous gère le debounce + push URL
   }, [setRecherche]);
 
-  // Debounce recherche → push URL après 400ms sans frappe
+  // Debounce recherche → push URL après 450ms sans frappe
+  // NE se déclenche PAS au premier rendu pour éviter une navigation inutile
   useEffect(() => {
+    if (isFirstRechercheRender.current) {
+      isFirstRechercheRender.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
       const s = useFiltresStore.getState();
       pushUrl({ ...s, recherche, page: 1 });
-    }, 400);
+    }, 450);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recherche]);

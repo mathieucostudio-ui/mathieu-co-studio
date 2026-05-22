@@ -17,6 +17,7 @@
  */
 
 import type { Metadata } from 'next';
+import { Suspense }        from 'react';
 import { setRequestLocale } from 'next-intl/server';
 import { getAllProduits }   from '@/lib/supabase/queries/produits';
 import { getAllCategories } from '@/lib/supabase/queries/categories';
@@ -81,7 +82,8 @@ export default async function BoutiquePage({ params, searchParams }: Props) {
   const offset = (page - 1) * ITEMS_PAR_PAGE;
 
   // ── Fetch parallèle : produits + catégories ──────────────────────────────
-  const [produitsResult, categories] = await Promise.all([
+  // Promise.allSettled → la page ne crashe pas si Supabase est injoignable
+  const [produitsSettled, categoriesSettled] = await Promise.allSettled([
     getAllProduits({
       categorie_id: categorieId ?? undefined,
       statut,
@@ -95,6 +97,20 @@ export default async function BoutiquePage({ params, searchParams }: Props) {
     }),
     getAllCategories(),
   ]);
+
+  // Valeurs par défaut si fetch échoue (Supabase non configuré, réseau, etc.)
+  const produitsResult = produitsSettled.status === 'fulfilled'
+    ? produitsSettled.value
+    : { data: [], total: 0, limit: ITEMS_PAR_PAGE, offset: 0, hasMore: false };
+
+  const categories = categoriesSettled.status === 'fulfilled'
+    ? categoriesSettled.value
+    : [];
+
+  // Afficher l'erreur dans les logs serveur (pas en production UI)
+  if (produitsSettled.status === 'rejected') {
+    console.error('[BoutiquePage] Supabase indisponible :', produitsSettled.reason);
+  }
 
   const { data: produits, total } = produitsResult;
   const totalPages = Math.ceil(total / ITEMS_PAR_PAGE);
@@ -115,8 +131,10 @@ export default async function BoutiquePage({ params, searchParams }: Props) {
       {/* ── Layout principal : sidebar + contenu ────────────────────────── */}
       <div className="flex min-h-[600px] items-stretch bg-blanc">
 
-        {/* Sidebar filtres */}
-        <BoutiqueSidebar categories={categories} />
+        {/* Sidebar filtres — Suspense requis par useSearchParams() */}
+        <Suspense fallback={<SidebarSkeleton />}>
+          <BoutiqueSidebar categories={categories} />
+        </Suspense>
 
         {/* Contenu : toolbar + grille + pagination */}
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -133,6 +151,26 @@ export default async function BoutiquePage({ params, searchParams }: Props) {
         </div>
       </div>
     </>
+  );
+}
+
+// =============================================================================
+//  SidebarSkeleton — fallback Suspense pour BoutiqueSidebar
+// =============================================================================
+
+function SidebarSkeleton() {
+  return (
+    <aside className="hidden md:block w-[278px] shrink-0 border-r border-gris-cl/60 bg-beige py-6 px-6">
+      <div className="mb-5 h-2.5 w-14 animate-pulse rounded-sm bg-beige3" />
+      <div className="h-8 w-full animate-pulse rounded-sm bg-beige3 mb-5" />
+      <div className="my-5 h-px w-full bg-beige3" />
+      {Array.from({ length: 5 }, (_, i) => (
+        <div key={i} className="mb-3 flex items-center gap-3">
+          <div className="size-[11px] animate-pulse rounded-[2px] bg-beige3 shrink-0" />
+          <div className="h-2.5 animate-pulse rounded-sm bg-beige3" style={{ width: `${55 + i * 10}%` }} />
+        </div>
+      ))}
+    </aside>
   );
 }
 
