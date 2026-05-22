@@ -5,7 +5,9 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(npx tsc *)",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(wc -c public/maquettes/Mathieu*.svg)",
+      "Bash(dir \"public\\\\maquettes\\\\\" 2>/dev/null)"
     ]
   }
 }
