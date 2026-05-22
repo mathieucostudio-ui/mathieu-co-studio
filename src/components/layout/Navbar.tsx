@@ -44,10 +44,22 @@ export function Navbar() {
             className="flex items-baseline gap-1.5 shrink-0 group"
             aria-label="Mathieu&Co Studio — accueil"
           >
-            <span className="text-[15px] font-semibold tracking-tight text-noir transition-colors duration-200 group-hover:text-or">
+            <span
+              className={cn(
+                'text-[15px] font-semibold tracking-tight transition-colors duration-300 group-hover:text-or',
+                scrolled
+                  ? 'text-noir'
+                  : 'text-blanc [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]',
+              )}
+            >
               Mathieu<span className="text-or">&amp;</span>Co
             </span>
-            <span className="text-[9px] uppercase tracking-[0.22em] font-light text-gris leading-none">
+            <span
+              className={cn(
+                'text-[9px] uppercase tracking-[0.22em] font-light leading-none transition-colors duration-300',
+                scrolled ? 'text-gris' : 'text-blanc/60 [text-shadow:0_1px_8px_rgba(0,0,0,0.45)]',
+              )}
+            >
               Studio
             </span>
           </Link>
@@ -61,10 +73,13 @@ export function Navbar() {
                     href={href}
                     className={cn(
                       'relative text-[10.5px] font-semibold uppercase tracking-[0.16em]',
-                      'text-noir transition-colors duration-200 hover:text-or',
+                      'transition-colors duration-300 hover:text-or',
                       'after:absolute after:bottom-[-3px] after:left-0 after:w-0 after:h-px',
                       'after:bg-or after:transition-[width] after:duration-200',
                       'hover:after:w-full',
+                      scrolled
+                        ? 'text-noir'
+                        : 'text-blanc [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]',
                     )}
                   >
                     {label}
@@ -79,7 +94,12 @@ export function Navbar() {
             <Link
               href="/compte"
               aria-label="Mon compte"
-              className="p-2 rounded-full text-noir hover:text-or hover:bg-beige2 transition-colors duration-200"
+              className={cn(
+                'p-2 rounded-full transition-colors duration-300 hover:text-or',
+                scrolled
+                  ? 'text-noir hover:bg-beige2'
+                  : 'text-blanc/80 hover:bg-blanc/10 [text-shadow:0_1px_8px_rgba(0,0,0,0.4)]',
+              )}
             >
               <User size={18} strokeWidth={1.5} />
             </Link>
@@ -87,7 +107,12 @@ export function Navbar() {
             <Link
               href="/panier"
               aria-label="Panier"
-              className="relative p-2 rounded-full text-noir hover:text-or hover:bg-beige2 transition-colors duration-200"
+              className={cn(
+                'relative p-2 rounded-full transition-colors duration-300 hover:text-or',
+                scrolled
+                  ? 'text-noir hover:bg-beige2'
+                  : 'text-blanc/80 hover:bg-blanc/10 [text-shadow:0_1px_8px_rgba(0,0,0,0.4)]',
+              )}
             >
               <ShoppingBag size={18} strokeWidth={1.5} />
               {/* Badge panier — à connecter au store cart */}
@@ -98,7 +123,12 @@ export function Navbar() {
               aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
-              className="md:hidden p-2 rounded-full text-noir hover:bg-beige2 transition-colors duration-200 ml-1"
+              className={cn(
+                'md:hidden p-2 rounded-full transition-colors duration-300 ml-1',
+                scrolled
+                  ? 'text-noir hover:bg-beige2'
+                  : 'text-blanc/80 hover:bg-blanc/10',
+              )}
             >
               {mobileOpen ? <X size={18} strokeWidth={1.5} /> : <Menu size={18} strokeWidth={1.5} />}
             </button>

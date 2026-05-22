@@ -299,8 +299,8 @@ export function HeroVideo() {
       <div className="pointer-events-none absolute inset-0 z-10" aria-hidden>
         {/* Bas → sombre (paint4_linear) */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020608]/55 to-[#020608]/82" />
-        {/* Haut → léger voile (paint5_linear) */}
-        <div className="absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-[#020608]/50 to-transparent" />
+        {/* Haut → voile renforcé sous la navbar (garantit la lisibilité du texte blanc) */}
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#020608]/70 to-transparent" />
         {/* Gauche → vignette (paint6_linear, couvre 40%) */}
         <div className="absolute inset-y-0 left-0 w-[40%] bg-gradient-to-r from-[#020608]/45 to-transparent" />
       </div>
