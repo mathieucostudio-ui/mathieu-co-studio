@@ -2,6 +2,9 @@ import { setRequestLocale } from 'next-intl/server';
 import {
   HeroVideo,
   StatsBar,
+  ServicesGrid,
+  GaleriePreview,
+  BoutiqueVedette,
   Manifesto,
   Newsletter,
 } from '@/components/home';
@@ -18,6 +21,9 @@ export default async function HomePage({ params }: Props) {
     <>
       <HeroVideo />
       <StatsBar />
+      <ServicesGrid />
+      <GaleriePreview />
+      <BoutiqueVedette />
       <Manifesto />
       <Newsletter />
       {/* Sections suivantes à venir */}
