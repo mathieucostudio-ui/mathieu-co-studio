@@ -43,6 +43,7 @@ export function Navbar() {
             href="/"
             className="flex items-baseline gap-1.5 shrink-0 group"
             aria-label="Mathieu&Co Studio — accueil"
+            translate="no"
           >
             <span
               className={cn(

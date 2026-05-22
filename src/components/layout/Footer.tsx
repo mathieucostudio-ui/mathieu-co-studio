@@ -130,6 +130,7 @@ function FooterLogo() {
       href="/"
       className="inline-flex items-baseline gap-1.5 group"
       aria-label="Mathieu&Co Studio — accueil"
+      translate="no"
     >
       <span className="text-[15px] font-semibold tracking-tight text-blanc transition-colors duration-200 group-hover:text-or">
         {'Mathieu'}<span className="text-or">{'&'}</span>{'Co'}
