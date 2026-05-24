@@ -10,8 +10,8 @@
  *   • Label   : 10px uppercase tracking-[0.28em] blanc/45
  */
 
-import { memo } from 'react';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { memo, useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion, useInView, type Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,6 +50,32 @@ const lineVariants: Variants = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  useCountUp — anime un nombre de 0 à target lorsque visible
+// ─────────────────────────────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 1400, reduced: boolean | null = false) {
+  const [display, setDisplay] = useState(0);
+  const ref     = useRef<HTMLSpanElement>(null);
+  const inView  = useInView(ref, { once: true, margin: '-60px' });
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (!inView || started.current || reduced) { setDisplay(target); return; }
+    started.current = true;
+    const start = performance.now();
+    const tick  = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      // ease-out-expo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setDisplay(Math.round(eased * target));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [inView, target, duration, reduced]);
+
+  return { display, ref };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  StatItem — mémoïsé pour éviter les re-renders inutiles
 // ─────────────────────────────────────────────────────────────────────────────
 const StatItem = memo(function StatItem({
@@ -61,6 +87,13 @@ const StatItem = memo(function StatItem({
   isLast: boolean;
   reduced: boolean | null;
 }) {
+  // Parse "8+" → { num: 8, suffix: "+" }
+  const match  = stat.value.match(/^(\d+)(\D*)$/);
+  const num    = match ? parseInt(match[1], 10) : 0;
+  const suffix = match ? match[2] : '';
+
+  const { display, ref } = useCountUp(num, 1600, reduced);
+
   return (
     <div className="relative flex flex-1 items-stretch">
       {/* ── Contenu ── */}
@@ -72,13 +105,14 @@ const StatItem = memo(function StatItem({
           'text-center',
         )}
       >
-        {/* Valeur numérique */}
+        {/* Valeur numérique avec count-up */}
         <span
+          ref={ref}
           className="block font-display font-light italic leading-none text-or"
           style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)' }}
           aria-label={`${stat.value} ${stat.label} ${stat.sublabel}`}
         >
-          {stat.value}
+          {display}{suffix}
         </span>
 
         {/* Label sur deux lignes */}

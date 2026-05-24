@@ -115,7 +115,7 @@ function FooterNavLink({
     <Link
       href={href}
       className={cn(
-        'text-sm text-blanc/85 transition-colors duration-200 hover:text-or',
+        'text-[13px] text-blanc/75 transition-colors duration-200 hover:text-or',
         className,
       )}
     >
@@ -147,23 +147,33 @@ export function Footer() {
 
   return (
     <footer className="bg-noir text-blanc" aria-labelledby="footer-heading">
-      <h2 id="footer-heading" className="sr-only">
-        Pied de page
-      </h2>
+      <h2 id="footer-heading" className="sr-only">Pied de page</h2>
 
-      <div className="max-w-7xl mx-auto px-6 md:px-10 pt-16 pb-12">
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
-          {/* Colonne 1 — Logo + description */}
-          <div className="flex flex-col gap-5 sm:col-span-2 lg:col-span-1">
+      {/* Ligne or haut */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-or/30 to-transparent" aria-hidden />
+
+      {/* Brand statement */}
+      <div className="border-b border-blanc/[0.06]">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 py-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div>
             <FooterLogo />
-            <p className="max-w-xs text-sm leading-relaxed text-gris">
-              Studio d&apos;architecture d&apos;intérieur et d&apos;extérieur à
-              Cotonou. Rendus 3D, conception sur mesure et boutique mobilier
-              &amp; décoration pour un marché international.
+            <p className="mt-3 text-[11px] leading-relaxed text-blanc/40 max-w-xs">
+              Architecture d&apos;intérieur de prestige &amp; mobilier d&apos;exception.
+              <span className="block mt-0.5 text-blanc/25">Cotonou · Bénin · International</span>
             </p>
           </div>
+          <p
+            className="font-display font-light italic text-blanc/20 leading-tight hidden md:block"
+            style={{ fontSize: 'clamp(1.05rem, 1.6vw, 1.4rem)' }}
+          >
+            L&apos;art de vivre, réinventé.
+          </p>
+        </div>
+      </div>
 
-          {/* Colonne 2 — Liens studio */}
+      <div className="max-w-7xl mx-auto px-6 md:px-10 pt-12 pb-12">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 lg:gap-12">
+          {/* Colonne 1 — Studio */}
           <nav aria-labelledby="footer-studio-heading" className="flex flex-col gap-5">
             <FooterColumnTitle id="footer-studio-heading">Studio</FooterColumnTitle>
             <ul className="flex flex-col gap-3">
@@ -195,7 +205,7 @@ export function Footer() {
               <li>
                 <a
                   href="mailto:contact@mathieu-co.studio"
-                  className="group inline-flex items-start gap-3 text-sm text-blanc/85 transition-colors hover:text-or"
+                  className="group inline-flex items-start gap-3 text-[13px] text-blanc/75 transition-colors hover:text-or"
                 >
                   <Mail
                     className="mt-0.5 size-4 shrink-0 text-or"
@@ -206,7 +216,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <span className="inline-flex items-start gap-3 text-sm text-blanc/85">
+                <span className="inline-flex items-start gap-3 text-[13px] text-blanc/75">
                   <MapPin
                     className="mt-0.5 size-4 shrink-0 text-or"
                     strokeWidth={1.5}
@@ -251,13 +261,13 @@ export function Footer() {
       {/* Barre inférieure */}
       <div className="border-t border-blanc/10">
         <div className="max-w-7xl mx-auto flex flex-col gap-4 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-10">
-          <p className="text-xs text-gris">
+          <p className="text-[11px] text-gris/60">
             © {year} Mathieu{'&'}Co Studio. Tous droits réservés.
           </p>
           <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {LEGAL_LINKS.map(({ label, href }) => (
               <li key={href}>
-                <FooterNavLink href={href} className="text-xs text-gris hover:text-or">
+                <FooterNavLink href={href} className="text-[11px] text-gris/60 hover:text-or">
                   {label}
                 </FooterNavLink>
               </li>

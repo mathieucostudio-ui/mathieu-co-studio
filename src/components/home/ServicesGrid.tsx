@@ -134,11 +134,13 @@ const ServiceCard = memo(function ServiceCard({
       className={cn(
         'group relative flex flex-col p-8 lg:p-10',
         'min-h-[320px]',
+        'transition-shadow duration-300 hover:shadow-card-hover',
         service.cardBg,
-        // Dernier card (blanc) a une bordure subtile
         service.cardBg === 'bg-blanc' && 'ring-1 ring-inset ring-gris-cl/40',
       )}
     >
+      {/* Accent bar or au hover */}
+      <div className="absolute inset-x-0 top-0 h-[2px] scale-x-0 bg-gradient-to-r from-or/60 to-or-light/40 transition-transform duration-300 group-hover:scale-x-100 origin-left" aria-hidden />
       {/* ── Numéro badge (SVG : 40×40 blanc/60 à 36px du bord gauche) ── */}
       <div
         className={cn(
@@ -195,8 +197,8 @@ const ServiceCard = memo(function ServiceCard({
         className={cn(
           'mt-auto inline-flex items-center gap-1.5',
           'text-[9.5px] font-semibold uppercase tracking-[0.22em]',
-          'text-noir/35 transition-colors duration-200',
-          'group-hover:text-or',
+          'text-noir/40 transition-all duration-200',
+          'group-hover:text-or group-hover:gap-2',
           'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-or rounded-sm',
         )}
         aria-label={`En savoir plus sur ${service.title.join(' ')}`}
@@ -205,7 +207,7 @@ const ServiceCard = memo(function ServiceCard({
         <ArrowUpRight
           size={11}
           strokeWidth={2}
-          className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
           aria-hidden
         />
       </Link>

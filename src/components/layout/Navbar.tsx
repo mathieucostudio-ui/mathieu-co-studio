@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
+import { useLocale } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,20 +11,31 @@ import { useCartCount } from '@/store/cartStore';
 
 const NAV_LINKS = [
   { label: 'Boutique', href: '/boutique' },
-  { label: 'Galerie', href: '/galerie' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'Galerie',  href: '/galerie'  },
+  { label: 'Blog',     href: '/blog'     },
+  { label: 'Contact',  href: '/contact'  },
 ] as const;
 
 export function Navbar() {
   const { scrollY } = useScroll();
-  const [scrolled,    setScrolled]    = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-  const cartCount = useCartCount();
+  const [scrolled,   setScrolled]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const cartCount  = useCartCount();
+  const pathname   = usePathname();
+  const locale     = useLocale();
+  const router     = useRouter();
 
   useMotionValueEvent(scrollY, 'change', (latest) => {
     setScrolled(latest > 20);
   });
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  const toggleLocale = () => {
+    const next = locale === 'fr' ? 'en' : 'fr';
+    router.replace(pathname, { locale: next });
+  };
 
   return (
     <>
@@ -70,30 +83,53 @@ export function Navbar() {
           {/* ── Nav links (desktop) ── */}
           <nav aria-label="Navigation principale">
             <ul className="hidden md:flex items-center gap-8">
-              {NAV_LINKS.map(({ label, href }) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className={cn(
-                      'relative text-[10.5px] font-semibold uppercase tracking-[0.16em]',
-                      'transition-colors duration-300 hover:text-or',
-                      'after:absolute after:bottom-[-3px] after:left-0 after:w-0 after:h-px',
-                      'after:bg-or after:transition-[width] after:duration-200',
-                      'hover:after:w-full',
-                      scrolled
-                        ? 'text-noir'
-                        : 'text-blanc [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]',
-                    )}
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
+              {NAV_LINKS.map(({ label, href }) => {
+                const active = isActive(href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'relative text-[10.5px] font-semibold uppercase tracking-[0.16em]',
+                        'transition-colors duration-300',
+                        'after:absolute after:bottom-[-3px] after:left-0 after:h-px',
+                        'after:bg-or after:transition-[width] after:duration-300',
+                        active
+                          ? 'text-or after:w-full'
+                          : 'after:w-0 hover:text-or hover:after:w-full',
+                        !active && (scrolled
+                          ? 'text-noir'
+                          : 'text-blanc [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]'),
+                      )}
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
 
           {/* ── Icons ── */}
           <div className="flex items-center gap-1">
+            {/* Language switcher */}
+            <button
+              type="button"
+              onClick={toggleLocale}
+              aria-label={`Passer en ${locale === 'fr' ? 'anglais' : 'français'}`}
+              className={cn(
+                'hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-sm',
+                'text-[9px] font-semibold uppercase tracking-[0.18em]',
+                'border transition-all duration-200',
+                scrolled
+                  ? 'border-gris-cl text-gris hover:border-or/50 hover:text-or'
+                  : 'border-blanc/20 text-blanc/60 hover:border-blanc/50 hover:text-blanc',
+              )}
+            >
+              {locale === 'fr' ? 'EN' : 'FR'}
+            </button>
+
             <Link
               href="/compte"
               aria-label="Mon compte"
@@ -165,17 +201,41 @@ export function Navbar() {
             )}
           >
             <ul className="flex flex-col divide-y divide-beige2">
-              {NAV_LINKS.map(({ label, href }) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    onClick={() => setMobileOpen(false)}
-                    className="block px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-noir hover:text-or hover:bg-beige transition-colors duration-150"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
+              {NAV_LINKS.map(({ label, href }) => {
+                const active = isActive(href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      onClick={() => setMobileOpen(false)}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center justify-between px-6 py-4',
+                        'text-[11px] font-semibold uppercase tracking-[0.2em]',
+                        'hover:bg-beige transition-colors duration-150',
+                        active ? 'text-or' : 'text-noir hover:text-or',
+                      )}
+                    >
+                      {label}
+                      {active && (
+                        <span className="block h-px w-4 rounded-full bg-or" aria-hidden />
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+              <li className="px-6 py-4 flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gris">
+                  Langue
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { toggleLocale(); setMobileOpen(false); }}
+                  className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gris hover:text-or transition-colors duration-150"
+                >
+                  {locale === 'fr' ? '🇬🇧 EN' : '🇫🇷 FR'}
+                </button>
+              </li>
             </ul>
           </motion.nav>
         )}

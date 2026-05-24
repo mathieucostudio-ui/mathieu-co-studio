@@ -20,11 +20,14 @@ export async function validerCodePromo(rawCode: string): Promise<PromoValidation
   try {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const result = await supabase
       .from('codes_promo')
       .select('*')
       .eq('code', code)
       .single();
+
+    const data = result.data as DbCodePromo | null;
+    const error = result.error;
 
     if (error || !data) return { ok: false, erreur: 'code_invalide' };
     if (!data.actif)    return { ok: false, erreur: 'code_invalide' };

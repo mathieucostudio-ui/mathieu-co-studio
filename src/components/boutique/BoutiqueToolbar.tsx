@@ -109,14 +109,14 @@ export function BoutiqueToolbar({ total, onToggleSidebar }: BoutiqueToolbarProps
           onChange={handleTri}
           className={cn(
             'rounded-sm border border-gris-cl bg-blanc',
-            'py-1.5 pl-3 pr-7',
-            'text-[11px] text-noir',
+            'py-1.5 pl-3 pr-8',
+            'text-[11px] font-medium text-noir',
             'appearance-none cursor-pointer',
-            'outline-none focus:border-or/60 focus:ring-1 focus:ring-or/30',
-            'transition-all duration-150',
+            'outline-none focus:border-or/50 focus:ring-1 focus:ring-or/25',
+            'hover:border-gris transition-all duration-150',
           )}
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5L5 6.5L8 3.5' stroke='%2384827f' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' fill='none'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23b8893a' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' fill='none'/%3E%3C/svg%3E")`,
             backgroundRepeat:   'no-repeat',
             backgroundPosition: 'right 10px center',
           }}

@@ -117,12 +117,10 @@ const ProjectCard = memo(function ProjectCard({
     <motion.article
       variants={reduced ? undefined : cardReveal}
       className={cn(
-        // Flex proportion asymétrique : 19fr pour featured, 13fr pour normal
-        // → [380, 260, 260, 380] ÷ max(380) ≈ [19, 13, 13, 19]
         project.featured ? 'flex-[19]' : 'flex-[13]',
-        'group relative min-w-0 overflow-hidden',
-        // Hauteur : 360px SVG
+        'group relative min-w-0 overflow-hidden rounded-sm',
         'h-[280px] md:h-[320px] lg:h-[360px]',
+        'transition-shadow duration-300 hover:shadow-modal',
       )}
     >
       <Link

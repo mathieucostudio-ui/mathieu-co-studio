@@ -108,6 +108,8 @@ export const ProduitCard = memo(function ProduitCard({
     <motion.article
       variants={cardReveal}
       custom={index}
+      whileHover={{ y: -2 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       className={cn(
         'group relative flex flex-col',
         'rounded-sm border border-gris-cl/50 bg-blanc',

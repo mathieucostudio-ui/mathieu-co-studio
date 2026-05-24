@@ -22,6 +22,7 @@ import { Link } from '@/i18n/navigation';
 import { Badge } from '@/components/ui';
 import { type BadgeVariant } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { useCartStore } from '@/store/cartStore';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Données produits mock
@@ -113,16 +114,27 @@ const ProductCard = memo(function ProductCard({
   product: Product;
   reduced: boolean | null;
 }) {
-  const [wishlisted,    setWishlisted]    = useState(false);
-  const [addedToCart,   setAddedToCart]   = useState(false);
+  const addToCart   = useCartStore((s) => s.addToCart);
+  const [wishlisted,  setWishlisted]  = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const handleWishlist = useCallback(() => setWishlisted((w) => !w), []);
 
   const handleAddToCart = useCallback(() => {
+    if (addedToCart) return;
+    addToCart({
+      produitId:    product.id,
+      slug:         product.href.replace('/boutique/', ''),
+      nom:          product.name,
+      image:        null,
+      prixUnitaire: product.price,
+      prixOriginal: product.price,
+      quantite:     1,
+    });
     setAddedToCart(true);
-    const t = setTimeout(() => setAddedToCart(false), 2000);
+    const t = setTimeout(() => setAddedToCart(false), 2200);
     return () => clearTimeout(t);
-  }, []);
+  }, [addedToCart, addToCart, product]);
 
   return (
     <motion.article

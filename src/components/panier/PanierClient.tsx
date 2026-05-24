@@ -268,7 +268,7 @@ function PromoCodeInput() {
         </div>
         <button
           type="button"
-          onClick={() => { removePromoCode(); setSuccess(false); }}
+          onClick={() => removePromoCode()}
           aria-label="Retirer le code promo"
           className="text-gris/50 hover:text-rouge transition-colors"
         >

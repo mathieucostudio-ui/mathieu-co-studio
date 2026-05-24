@@ -20,7 +20,15 @@
       "Bash(npx next *)",
       "Bash(python -c \"import json,sys; p=json.load\\(sys.stdin\\); deps={**p.get\\('dependencies',{}\\), **p.get\\('devDependencies',{}\\)}; [print\\(f'{k}: {v}'\\) for k in ['zustand','immer','zod'] if k in deps]\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); const deps={...p.dependencies,...\\(p.devDependencies||{}\\)}; ['zustand','immer','zod'].forEach\\(k => console.log\\(k+':', deps[k]||'NON INSTALLE'\\)\\)\")",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(n\\\\\")",
+      "Bash(\" 2>&1 | Select-Object -First 100)",
+      "Bash(powershell -Command ' *)",
+      "Bash(python3 -c \"f=open\\('public/maquettes/checkout-mathieu-co 1.svg',encoding='utf-8'\\);d=f.read\\(120000\\);f.close\\(\\);print\\(d[60000:80000]\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const deps={...p.dependencies,...p.devDependencies}; ['framer-motion','lucide-react','zustand','@phosphor-icons/react'].forEach\\(k => console.log\\(k+':', deps[k]||'NOT FOUND'\\)\\)\")",
+      "Bash(head -80 src/app/globals.css)",
+      "Bash(powershell -Command \"Get-Content src/app/globals.css -TotalCount 80\")",
+      "mcp__magic__21st_magic_component_inspiration"
     ]
   }
 }
