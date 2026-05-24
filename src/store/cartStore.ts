@@ -7,16 +7,15 @@
  *   • Calculs : fonctions pures exportées → utilisées dans les composants
  *   • Clé panier : produitId + finition → permet plusieurs finitions du même produit
  *
- * Codes promo (demo client-side — production = validation API) :
- *   BIENVENUE10  → -10%  (sans seuil)
- *   STUDIO15     → -15%  (dès 200 000 FCFA)
- *   FIDELITE25   → -25%  (dès 500 000 FCFA)
- *   LIVRAISON    → frais de port offerts (dès 50 000 FCFA)
+ * Codes promo : validés via Supabase (table codes_promo).
+ *   Types : pourcentage | montant_fixe | livraison_gratuite
  */
 
 import { create }                         from 'zustand';
 import { persist, createJSONStorage, devtools } from 'zustand/middleware';
 import { formatFCFA }                     from '@/types/product';
+import { validerCodePromo }               from '@/lib/supabase/queries/promoCodes';
+import type { TypePromo }                 from '@/types/database';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -63,12 +62,12 @@ export type CartItemInput = Omit<CartItem, 'key' | 'quantite'> & {
   quantite?: number;
 };
 
-export type TypePromo = 'pourcentage' | 'montant_fixe';
+export type { TypePromo };
 
 export interface CodePromo {
   code:    string;
   type:    TypePromo;
-  /** Pour 'pourcentage' : 10 = 10% | Pour 'montant_fixe' : valeur en FCFA */
+  /** Pour 'pourcentage' : 10 = 10% | Pour 'montant_fixe' : valeur en FCFA | 'livraison_gratuite' : 0 */
   valeur:  number;
   /** Seuil minimum du sous-total (0 = aucun seuil) */
   minimum: number;
@@ -80,45 +79,15 @@ export interface CodePromo {
 export type ErreurPromo =
   | 'code_invalide'
   | 'montant_insuffisant'
-  | 'deja_applique';
+  | 'deja_applique'
+  | 'code_expire'
+  | 'limite_atteinte'
+  | 'erreur_reseau';
 
 /** Résultat de l'application d'un code promo */
 export type ResultatPromo =
   | { success: true }
   | { success: false; erreur: ErreurPromo };
-
-// ─── Codes promo (catalogue demo) ─────────────────────────────────────────────
-
-const CODES_PROMO: Readonly<Record<string, CodePromo>> = {
-  BIENVENUE10: {
-    code:    'BIENVENUE10',
-    type:    'pourcentage',
-    valeur:  10,
-    minimum: 0,
-    label:   '−10% de bienvenue',
-  },
-  STUDIO15: {
-    code:    'STUDIO15',
-    type:    'pourcentage',
-    valeur:  15,
-    minimum: 200_000,
-    label:   '−15% dès 200 000 FCFA',
-  },
-  FIDELITE25: {
-    code:    'FIDELITE25',
-    type:    'pourcentage',
-    valeur:  25,
-    minimum: 500_000,
-    label:   '−25% dès 500 000 FCFA',
-  },
-  LIVRAISON: {
-    code:    'LIVRAISON',
-    type:    'montant_fixe',
-    valeur:  FRAIS_LIVRAISON_DEFAUT,
-    minimum: 50_000,
-    label:   'Livraison offerte',
-  },
-} as const;
 
 // ─── Calculs dérivés (fonctions pures) ────────────────────────────────────────
 
@@ -135,6 +104,7 @@ export function calculerSousTotal(items: CartItem[]): number {
 /** Montant de la remise code promo (FCFA) */
 export function calculerRemise(sousTotal: number, code: CodePromo | null): number {
   if (!code) return 0;
+  if (code.type === 'livraison_gratuite') return 0;
   if (code.type === 'pourcentage') {
     return Math.round(sousTotal * (code.valeur / 100));
   }
@@ -142,13 +112,13 @@ export function calculerRemise(sousTotal: number, code: CodePromo | null): numbe
   return Math.min(code.valeur, sousTotal);
 }
 
-/** Frais de livraison après remise (FCFA — 0 si seuil atteint ou code LIVRAISON) */
+/** Frais de livraison après remise (FCFA — 0 si seuil atteint ou code livraison_gratuite) */
 export function calculerFraisLivraison(
   sousTotal:  number,
   remise:     number,
   codePromo:  CodePromo | null,
 ): number {
-  if (codePromo?.code === 'LIVRAISON') return 0;
+  if (codePromo?.type === 'livraison_gratuite') return 0;
   const montantApresRemise = sousTotal - remise;
   return montantApresRemise >= SEUIL_LIVRAISON_GRATUITE ? 0 : FRAIS_LIVRAISON_DEFAUT;
 }
@@ -184,6 +154,14 @@ export function calculerTotaux(
 /** Re-export pour éviter l'import double dans les composants panier */
 export { formatFCFA };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function genererLabel(type: TypePromo, valeur: number): string {
+  if (type === 'livraison_gratuite') return 'Livraison offerte';
+  if (type === 'pourcentage')        return `−${valeur}%`;
+  return `−${formatFCFA(valeur)}`;
+}
+
 // ─── Interface du store ────────────────────────────────────────────────────────
 
 export interface CartState {
@@ -211,11 +189,11 @@ export interface CartState {
   updateQuantity: (key: string, quantite: number) => void;
 
   /**
-   * Valide et applique un code promo.
+   * Valide et applique un code promo via Supabase.
    * La comparaison est insensible à la casse.
    * @returns ResultatPromo — success ou raison d'échec
    */
-  applyPromoCode: (code: string) => ResultatPromo;
+  applyPromoCode: (code: string) => Promise<ResultatPromo>;
 
   /** Retire le code promo actif */
   removePromoCode: () => void;
@@ -226,11 +204,6 @@ export interface CartState {
 
 // ─── Stockage SSR-safe ────────────────────────────────────────────────────────
 
-/**
- * Stub côté serveur : localStorage n'existe pas en SSR.
- * Zustand persist n'appellera ce stub que pendant le rendu serveur —
- * la vraie hydratation se fait côté client via rehydrate automatique.
- */
 const ssrStorage = {
   getItem:    (_key: string): null => null,
   setItem:    (_key: string, _value: string): void => undefined,
@@ -254,7 +227,6 @@ export const useCartStore = create<CartState>()(
           const idx      = items.findIndex((i) => i.key === key);
 
           if (idx !== -1) {
-            // Ligne existante → incrémenter
             set({
               items: items.map((item, i) =>
                 i === idx
@@ -263,7 +235,6 @@ export const useCartStore = create<CartState>()(
               ),
             }, false, 'addToCart/increment');
           } else {
-            // Nouvelle ligne
             set({
               items: [...items, { ...input, key, quantite: qty }],
             }, false, 'addToCart/new');
@@ -293,25 +264,36 @@ export const useCartStore = create<CartState>()(
           }, false, 'updateQuantity');
         },
 
-        // ── applyPromoCode ─────────────────────────────────────────────────────
-        applyPromoCode(rawCode) {
+        // ── applyPromoCode (async — validation Supabase) ───────────────────────
+        async applyPromoCode(rawCode) {
           const code = rawCode.trim().toUpperCase();
 
           if (get().codePromo?.code === code) {
             return { success: false, erreur: 'deja_applique' };
           }
 
-          const promo = CODES_PROMO[code];
-          if (!promo) {
-            return { success: false, erreur: 'code_invalide' };
+          const validation = await validerCodePromo(code);
+
+          if (!validation.ok) {
+            return { success: false, erreur: validation.erreur };
           }
 
+          const { promo } = validation;
           const sousTotal = calculerSousTotal(get().items);
-          if (promo.minimum > 0 && sousTotal < promo.minimum) {
+
+          if (promo.minimum_commande > 0 && sousTotal < promo.minimum_commande) {
             return { success: false, erreur: 'montant_insuffisant' };
           }
 
-          set({ codePromo: promo }, false, 'applyPromoCode');
+          const codePromoData: CodePromo = {
+            code:    promo.code,
+            type:    promo.type as TypePromo,
+            valeur:  promo.valeur,
+            minimum: promo.minimum_commande,
+            label:   genererLabel(promo.type as TypePromo, promo.valeur),
+          };
+
+          set({ codePromo: codePromoData }, false, 'applyPromoCode');
           return { success: true };
         },
 
@@ -330,7 +312,6 @@ export const useCartStore = create<CartState>()(
         storage: createJSONStorage(() =>
           typeof window === 'undefined' ? ssrStorage : localStorage,
         ),
-        // Ne persiste que les données — pas les fonctions
         partialize: (state) => ({
           items:     state.items,
           codePromo: state.codePromo,
@@ -343,23 +324,10 @@ export const useCartStore = create<CartState>()(
 
 // ─── Sélecteurs mémoïsés (stable reference) ───────────────────────────────────
 
-/**
- * Hook dérivé : retourne les totaux calculés du panier.
- * Utilise une selector function pour éviter les re-rendus inutiles.
- *
- * @example
- * const { total, nombreArticles, resteAvantLivraisonGratuite } = useCartTotaux();
- */
 export function useCartTotaux(): TotauxPanier {
   return useCartStore((state) => calculerTotaux(state.items, state.codePromo));
 }
 
-/**
- * Hook dérivé : nombre total d'articles dans le panier (pour le badge nav).
- *
- * @example
- * const count = useCartCount();
- */
 export function useCartCount(): number {
   return useCartStore((state) =>
     state.items.reduce((acc, item) => acc + item.quantite, 0),

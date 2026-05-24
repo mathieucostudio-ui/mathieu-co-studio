@@ -220,28 +220,34 @@ function PromoCodeInput() {
   const removePromoCode = useCartStore((s) => s.removePromoCode);
   const codePromo       = useCartStore((s) => s.codePromo);
 
-  const [code,   setCode]   = useState('');
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [code,    setCode]    = useState('');
+  const [erreur,  setErreur]  = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset local error when store promo changes
   useEffect(() => {
-    if (codePromo) { setCode(''); setErreur(null); setSuccess(true); }
+    if (codePromo) { setCode(''); setErreur(null); }
   }, [codePromo]);
 
-  const handleApply = useCallback(() => {
+  const handleApply = useCallback(async () => {
     if (!code.trim()) { setErreur('Veuillez saisir un code.'); return; }
-    const result = applyPromoCode(code);
-    if (result.success) {
-      setErreur(null);
-    } else {
-      const msgs: Record<typeof result.erreur, string> = {
-        code_invalide:       'Code invalide ou expiré.',
-        montant_insuffisant: `Montant minimum non atteint pour ce code.`,
-        deja_applique:       'Ce code est déjà appliqué.',
-      };
-      setErreur(msgs[result.erreur]);
+    setLoading(true);
+    setErreur(null);
+    try {
+      const result = await applyPromoCode(code);
+      if (!result.success) {
+        const msgs: Record<typeof result.erreur, string> = {
+          code_invalide:       'Code invalide ou introuvable.',
+          montant_insuffisant: 'Montant minimum non atteint pour ce code.',
+          deja_applique:       'Ce code est déjà appliqué.',
+          code_expire:         'Ce code promo a expiré.',
+          limite_atteinte:     "Ce code a atteint sa limite d'utilisation.",
+          erreur_reseau:       'Erreur réseau. Veuillez réessayer.',
+        };
+        setErreur(msgs[result.erreur]);
+      }
+    } finally {
+      setLoading(false);
     }
   }, [code, applyPromoCode]);
 
@@ -304,13 +310,21 @@ function PromoCodeInput() {
         <button
           type="button"
           onClick={handleApply}
+          disabled={loading}
           className={cn(
             'shrink-0 rounded-sm border border-gris-cl px-4 py-2.5',
-            'text-[10px] font-semibold uppercase tracking-[0.18em] text-gris-dark',
-            'hover:border-or/60 hover:text-or transition-all duration-200',
+            'text-[10px] font-semibold uppercase tracking-[0.18em]',
+            'transition-all duration-200',
+            loading
+              ? 'text-gris/40 cursor-not-allowed'
+              : 'text-gris-dark hover:border-or/60 hover:text-or',
           )}
         >
-          Appliquer
+          {loading ? (
+            <svg className="animate-spin size-3.5 text-gris/50" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="12" />
+            </svg>
+          ) : 'Appliquer'}
         </button>
       </div>
 

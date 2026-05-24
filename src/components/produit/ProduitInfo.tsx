@@ -24,6 +24,7 @@ import { Link }                           from '@/i18n/navigation';
 import { cn }                             from '@/lib/utils';
 import { formatFCFA, getPourcentageRemise } from '@/types/product';
 import type { ProduitDetail, CategorieResume } from '@/types/product';
+import { useCartStore }                   from '@/store/cartStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,8 @@ export const ProduitInfo = memo(function ProduitInfo({
   avisTotal = 0,
   avisMoyenne = 0,
 }: ProduitInfoProps) {
+  const addToCart = useCartStore((s) => s.addToCart);
+
   const [activeFinition, setActiveFinition] = useState<string>(FINITIONS[0].id);
   const [quantite,       setQuantite]        = useState(1);
   const [wishlisted,     setWishlisted]       = useState(false);
@@ -113,9 +116,19 @@ export const ProduitInfo = memo(function ProduitInfo({
 
   const handleAddToCart = useCallback(() => {
     if (isEpuise || cartAdded) return;
+    addToCart({
+      produitId:    produit.id,
+      slug:         produit.slug,
+      nom:          produit.nom,
+      image:        produit.images[0]?.url ?? null,
+      prixUnitaire: produit.prix_promo ?? produit.prix,
+      prixOriginal: produit.prix,
+      quantite,
+      finition:     activeFinition,
+    });
     setCartAdded(true);
     setTimeout(() => setCartAdded(false), 2500);
-  }, [isEpuise, cartAdded]);
+  }, [isEpuise, cartAdded, addToCart, produit, quantite, activeFinition]);
 
   return (
     <div className="flex h-full flex-col py-8 px-8 xl:px-12">

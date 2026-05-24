@@ -19,6 +19,7 @@ import { Link } from '@/i18n/navigation';
 import { Badge }  from '@/components/ui';
 import { cn }     from '@/lib/utils';
 import { formatFCFA, getPourcentageRemise, type ProduitCard as TProduitCard } from '@/types/product';
+import { useCartStore } from '@/store/cartStore';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ export const ProduitCard = memo(function ProduitCard({
   index = 0,
   basePath = '/boutique',
 }: ProduitCardProps) {
+  const addToCart     = useCartStore((s) => s.addToCart);
   const [wishlisted,  setWishlisted]  = useState(false);
   const [cartAdded,   setCartAdded]   = useState(false);
 
@@ -84,10 +86,19 @@ export const ProduitCard = memo(function ProduitCard({
 
   const handleAddToCart = useCallback(() => {
     if (isEpuise || cartAdded) return;
+    addToCart({
+      produitId:    produit.id,
+      slug:         produit.slug,
+      nom:          produit.nom,
+      image:        produit.images[0]?.url ?? null,
+      prixUnitaire: produit.prix_promo ?? produit.prix,
+      prixOriginal: produit.prix,
+      quantite:     1,
+    });
     setCartAdded(true);
     const tid = setTimeout(() => setCartAdded(false), 2200);
     return () => clearTimeout(tid);
-  }, [isEpuise, cartAdded]);
+  }, [isEpuise, cartAdded, addToCart, produit]);
 
   const placeholderBg = getPlaceholderBg(produit.id);
   const firstImage    = produit.images[0];

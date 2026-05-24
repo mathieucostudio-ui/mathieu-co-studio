@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, User, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCartCount } from '@/store/cartStore';
 
 const NAV_LINKS = [
   { label: 'Boutique', href: '/boutique' },
@@ -15,8 +16,9 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const { scrollY } = useScroll();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled,    setScrolled]    = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const cartCount = useCartCount();
 
   useMotionValueEvent(scrollY, 'change', (latest) => {
     setScrolled(latest > 20);
@@ -116,7 +118,15 @@ export function Navbar() {
               )}
             >
               <ShoppingBag size={18} strokeWidth={1.5} />
-              {/* Badge panier — à connecter au store cart */}
+              {cartCount > 0 && (
+                <span className={cn(
+                  'absolute -top-0.5 -right-0.5',
+                  'flex size-4 items-center justify-center rounded-full',
+                  'bg-or text-blanc text-[9px] font-bold leading-none',
+                )}>
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
             </Link>
 
             {/* Burger (mobile) */}
