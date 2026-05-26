@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useCallback, useEffect, useId, useRef } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, ChevronLeft, Lock, CreditCard, Smartphone,
   Building2, Globe, Shield, RotateCcw, Truck,
-  MapPin, User, Eye, EyeOff, Wifi,
+  MapPin, User, Eye, EyeOff, Wifi, AlertCircle, Loader2,
 } from 'lucide-react';
+import { Elements, useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement } from '@stripe/react-stripe-js';
+import { useRouter } from '@/i18n/navigation';
 import { Link }           from '@/i18n/navigation';
 import { cn }             from '@/lib/utils';
+import { getStripe }      from '@/lib/stripe/client';
 import { useCartStore, useCartTotaux, formatFCFA } from '@/store/cartStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -291,35 +294,95 @@ function CardPreview({ num, name, expiry, cvc, brand, focus }: CardPreviewProps)
   );
 }
 
-// ─── Carte Bancaire form ──────────────────────────────────────────────────────
+// ─── Stripe Element shared style ─────────────────────────────────────────────
 
-function CardForm() {
-  const formId = useId();
+const STRIPE_STYLE = {
+  style: {
+    base: {
+      fontSize:     '13px',
+      color:        '#151515',
+      fontFamily:   'system-ui, -apple-system, sans-serif',
+      fontWeight:   '500',
+      letterSpacing: '0.01em',
+      '::placeholder': { color: 'rgba(117,110,101,0.4)' },
+    },
+    invalid:  { color: '#c0392b' },
+    complete: { color: '#151515' },
+  },
+} as const;
 
-  const [num,     setNum]     = useState('');
-  const [expiry,  setExpiry]  = useState('');
-  const [cvc,     setCvc]     = useState('');
-  const [name,    setName]    = useState('');
-  const [showCvc, setShowCvc] = useState(false);
-  const [focus,   setFocus]   = useState<CardFocus>(null);
+const stripeWrapClass = cn(
+  'rounded-sm border bg-beige px-4 py-[13px]',
+  'transition-all duration-200 border-gris-cl',
+  'focus-within:border-or focus-within:ring-1 focus-within:ring-or/30 focus-within:bg-blanc',
+);
 
-  const brand  = detectBrand(num);
-  const filled = num.replace(/\s/g, '').length === 16 &&
-                 expiry.length === 5 &&
-                 cvc.length >= 3 &&
-                 name.trim().length >= 3;
+// ─── StripeCardForm — uses Elements context ────────────────────────────────────
 
-  const inputClass = cn(
-    'w-full rounded-sm border bg-beige px-4 py-3.5',
-    'text-[13px] font-medium text-noir placeholder:text-gris/40 placeholder:font-normal',
-    'outline-none transition-all duration-200',
-    'focus:border-or focus:ring-1 focus:ring-or/30 focus:bg-blanc',
-    'border-gris-cl',
-  );
+interface StripeCardFormProps {
+  /** Ref receives a { submit } function called by the parent Payer button */
+  submitRef: React.MutableRefObject<(() => Promise<void>) | null>;
+  onProcessing: (v: boolean) => void;
+  onError:      (v: string | null) => void;
+}
+
+function StripeCardForm({ submitRef, onProcessing, onError }: StripeCardFormProps) {
+  const stripe   = useStripe();
+  const elements = useElements();
+  const router   = useRouter();
+  const formId   = useId();
+
+  const [name,  setName]  = useState('');
+  const [brand, setBrand] = useState<CardBrand>('other');
+  const [focus, setFocus] = useState<CardFocus>(null);
+
+  // Expose submit function to parent via ref
+  useEffect(() => {
+    submitRef.current = async () => {
+      if (!stripe || !elements) return;
+      onProcessing(true);
+      onError(null);
+
+      // Validate fields first
+      const { error: submitErr } = await elements.submit();
+      if (submitErr) {
+        onError(submitErr.message ?? 'Erreur de validation');
+        onProcessing(false);
+        return;
+      }
+
+      const { error: confirmErr } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/checkout/confirmation`,
+          payment_method_data: {
+            billing_details: { name: name.trim() || undefined },
+          },
+        },
+        redirect: 'if_required',
+      });
+
+      if (confirmErr) {
+        onError(confirmErr.message ?? 'Paiement refusé');
+        onProcessing(false);
+      } else {
+        // 3DS passed without redirect — navigate to confirmation
+        router.push('/checkout/confirmation');
+      }
+    };
+  }, [stripe, elements, name, submitRef, onProcessing, onError, router]);
 
   return (
     <div className="space-y-5">
-      <CardPreview num={num} name={name} expiry={expiry} cvc={cvc} brand={brand} focus={focus} />
+      {/* 3D card preview (brand-aware, name-aware) */}
+      <CardPreview
+        num="•••• •••• •••• ••••"
+        name={name}
+        expiry="••/••"
+        cvc=""
+        brand={brand}
+        focus={focus}
+      />
 
       {/* Card number */}
       <div>
@@ -328,20 +391,18 @@ function CardForm() {
           Numéro de carte
         </label>
         <div className="relative">
-          <input
-            id={`${formId}-num`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="cc-number"
-            value={num}
-            onChange={(e) => setNum(fmtCard(e.target.value))}
-            onFocus={() => setFocus('number')}
-            onBlur={() => setFocus(null)}
-            placeholder="0000 0000 0000 0000"
-            maxLength={19}
-            className={cn(inputClass, 'pr-28')}
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+          <div className={cn(stripeWrapClass, 'pr-28')}>
+            <CardNumberElement
+              id={`${formId}-num`}
+              options={STRIPE_STYLE}
+              onChange={(e) => setBrand(
+                e.brand === 'visa' ? 'visa' : e.brand === 'mastercard' ? 'mastercard' : 'other',
+              )}
+              onFocus={() => setFocus('number')}
+              onBlur={() => setFocus(null)}
+            />
+          </div>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
             <VisaLogoCard       active={brand === 'visa'       || brand === 'other'} />
             <MastercardLogoCard active={brand === 'mastercard' || brand === 'other'} />
           </div>
@@ -355,54 +416,32 @@ function CardForm() {
             className="mb-2 block text-[9.5px] font-semibold uppercase tracking-[0.22em] text-gris/70">
             Date d&apos;expiration
           </label>
-          <input
-            id={`${formId}-exp`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="cc-exp"
-            value={expiry}
-            onChange={(e) => setExpiry(fmtExpiry(e.target.value))}
-            onFocus={() => setFocus('expiry')}
-            onBlur={() => setFocus(null)}
-            placeholder="MM/AA"
-            maxLength={5}
-            className={inputClass}
-          />
+          <div className={stripeWrapClass}>
+            <CardExpiryElement
+              id={`${formId}-exp`}
+              options={STRIPE_STYLE}
+              onFocus={() => setFocus('expiry')}
+              onBlur={() => setFocus(null)}
+            />
+          </div>
         </div>
         <div>
           <label htmlFor={`${formId}-cvc`}
             className="mb-2 block text-[9.5px] font-semibold uppercase tracking-[0.22em] text-gris/70">
             Code CVC
           </label>
-          <div className="relative">
-            <input
+          <div className={stripeWrapClass}>
+            <CardCvcElement
               id={`${formId}-cvc`}
-              type={showCvc ? 'text' : 'password'}
-              inputMode="numeric"
-              autoComplete="cc-csc"
-              value={cvc}
-              onChange={(e) => setCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              options={STRIPE_STYLE}
               onFocus={() => setFocus('cvc')}
               onBlur={() => setFocus(null)}
-              placeholder="•••"
-              maxLength={4}
-              className={cn(inputClass, 'pr-10')}
             />
-            <button
-              type="button"
-              onClick={() => setShowCvc((v) => !v)}
-              aria-label={showCvc ? 'Masquer le CVC' : 'Afficher le CVC'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gris/40 hover:text-gris transition-colors"
-            >
-              {showCvc
-                ? <EyeOff size={14} strokeWidth={1.8} aria-hidden />
-                : <Eye    size={14} strokeWidth={1.8} aria-hidden />}
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Cardholder */}
+      {/* Cardholder name */}
       <div>
         <label htmlFor={`${formId}-name`}
           className="mb-2 block text-[9.5px] font-semibold uppercase tracking-[0.22em] text-gris/70">
@@ -418,9 +457,15 @@ function CardForm() {
             onFocus={() => setFocus('name')}
             onBlur={() => setFocus(null)}
             placeholder="Prénom NOM"
-            className={cn(inputClass, filled ? 'pr-10' : '')}
+            className={cn(
+              'w-full rounded-sm border bg-beige px-4 py-3.5',
+              'text-[13px] font-medium text-noir placeholder:text-gris/40',
+              'outline-none transition-all duration-200 border-gris-cl',
+              'focus:border-or focus:ring-1 focus:ring-or/30 focus:bg-blanc',
+              name.trim().length >= 3 && 'pr-10',
+            )}
           />
-          {filled && (
+          {name.trim().length >= 3 && (
             <motion.span
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -433,10 +478,10 @@ function CardForm() {
         </div>
       </div>
 
-      {/* SSL */}
+      {/* Security notice */}
       <p className="flex items-center gap-1.5 text-[10.5px] text-gris/60">
         <Lock size={11} strokeWidth={1.8} className="text-vert shrink-0" aria-hidden />
-        Données chiffrées SSL 256 bits. Nous ne stockons pas vos informations de carte.
+        Paiement sécurisé par Stripe · SSL 256 bits · Nous ne stockons pas vos données de carte.
       </p>
     </div>
   );
@@ -890,13 +935,108 @@ function CheckoutSkeleton() {
 // ─── CheckoutClient ───────────────────────────────────────────────────────────
 
 export function CheckoutClient() {
-  const [method,  setMethod]  = useState<PayMethod>('carte');
-  const [mounted, setMounted] = useState(false);
-  const tabsRef               = useRef<HTMLDivElement>(null);
-  const { total }             = useCartTotaux();
+  const [method,       setMethod]       = useState<PayMethod>('carte');
+  const [mounted,      setMounted]      = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [piLoading,    setPiLoading]    = useState(false);
+  const [piError,      setPiError]      = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [payError,     setPayError]     = useState<string | null>(null);
+
+  const tabsRef     = useRef<HTMLDivElement>(null);
+  const stripeSubmit = useRef<(() => Promise<void>) | null>(null);
+
+  const { total }   = useCartTotaux();
+  const items       = useCartStore((s) => s.items);
+  const codePromo   = useCartStore((s) => s.codePromo);
 
   useEffect(() => setMounted(true), []);
+
+  // Create PaymentIntent as soon as cart is available
+  useEffect(() => {
+    if (!mounted || items.length === 0) return;
+    setPiLoading(true);
+    setPiError(null);
+
+    fetch('/api/stripe/payment-intent', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ items, codePromo }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+        } else {
+          setPiError(data.error ?? 'Impossible d\'initialiser le paiement');
+        }
+      })
+      .catch(() => setPiError('Erreur réseau'))
+      .finally(() => setPiLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
+  // Handle pay button
+  const handlePay = useCallback(async () => {
+    if (method === 'carte') {
+      await stripeSubmit.current?.();
+    }
+    // Mobile Money, PayPal, Virement: not wired to real payment provider yet
+  }, [method]);
+
   if (!mounted) return <CheckoutSkeleton />;
+
+  const stripePromise = getStripe();
+
+  // Tab content (rendered inside Elements for carte, plain for others)
+  const tabContent = (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={method}
+        id={`panel-${method}`}
+        role="tabpanel"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        {method === 'carte' && (
+          <>
+            {piLoading && (
+              <div className="flex items-center justify-center gap-3 py-12 text-gris/60">
+                <Loader2 size={18} strokeWidth={1.5} className="animate-spin" aria-hidden />
+                <span className="text-[12px]">Initialisation du paiement…</span>
+              </div>
+            )}
+            {piError && (
+              <div className="flex items-start gap-2.5 rounded-sm border border-rouge/30 bg-rouge/6 px-4 py-3">
+                <AlertCircle size={14} strokeWidth={1.8} className="mt-0.5 text-rouge shrink-0" aria-hidden />
+                <p className="text-[12px] text-gris-dark">{piError}</p>
+              </div>
+            )}
+            {clientSecret && !piLoading && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  locale: 'fr',
+                  appearance: { theme: 'stripe' },
+                }}
+              >
+                <StripeCardForm
+                  submitRef={stripeSubmit}
+                  onProcessing={setIsProcessing}
+                  onError={setPayError}
+                />
+              </Elements>
+            )}
+          </>
+        )}
+        {method === 'mobile'   && <MobileMoneyForm />}
+        {method === 'paypal'   && <PayPalForm />}
+        {method === 'virement' && <BankTransferForm />}
+      </motion.div>
+    </AnimatePresence>
+  );
 
   return (
     <div className="min-h-[100dvh] bg-beige">
@@ -939,7 +1079,7 @@ export function CheckoutClient() {
                 Méthode de paiement
               </p>
 
-              {/* Tab bar with animated background pill */}
+              {/* Tab bar */}
               <div
                 ref={tabsRef}
                 className="relative grid grid-cols-4 gap-2 mb-0 rounded-sm"
@@ -980,24 +1120,21 @@ export function CheckoutClient() {
 
               {/* Tab content */}
               <div className="mt-2 rounded-sm border border-gris-cl bg-blanc p-6">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={method}
-                    id={`panel-${method}`}
-                    role="tabpanel"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  >
-                    {method === 'carte'    && <CardForm />}
-                    {method === 'mobile'   && <MobileMoneyForm />}
-                    {method === 'paypal'   && <PayPalForm />}
-                    {method === 'virement' && <BankTransferForm />}
-                  </motion.div>
-                </AnimatePresence>
+                {tabContent}
               </div>
             </div>
+
+            {/* Payment error */}
+            {payError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-2.5 rounded-sm border border-rouge/30 bg-rouge/6 px-4 py-3"
+              >
+                <AlertCircle size={14} strokeWidth={1.8} className="mt-0.5 text-rouge shrink-0" aria-hidden />
+                <p className="text-[12px] text-gris-dark">{payError}</p>
+              </motion.div>
+            )}
 
             {/* Action buttons */}
             <div className="rounded-sm border border-gris-cl bg-blanc px-6 py-5">
@@ -1012,15 +1149,25 @@ export function CheckoutClient() {
 
                 <motion.button
                   type="button"
-                  whileTap={{ scale: 0.98, y: 1 }}
+                  onClick={handlePay}
+                  whileTap={isProcessing ? undefined : { scale: 0.98, y: 1 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  disabled={method === 'paypal'}
+                  disabled={method === 'paypal' || isProcessing || (method === 'carte' && !clientSecret)}
                   className="flex flex-1 items-center justify-center gap-2.5 rounded-sm py-3.5 px-6 bg-or text-blanc shadow-or text-[10px] font-semibold uppercase tracking-[0.24em] hover:bg-or-dark hover:shadow-or-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
                 >
-                  <Lock size={12} strokeWidth={2} aria-hidden />
-                  {method === 'virement'
-                    ? 'Confirmer la commande'
-                    : `Payer ${total > 0 ? formatFCFA(total) : ''}`}
+                  {isProcessing ? (
+                    <>
+                      <Loader2 size={12} strokeWidth={2} className="animate-spin" aria-hidden />
+                      Traitement en cours…
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={12} strokeWidth={2} aria-hidden />
+                      {method === 'virement'
+                        ? 'Confirmer la commande'
+                        : `Payer ${total > 0 ? formatFCFA(total) : ''}`}
+                    </>
+                  )}
                 </motion.button>
               </div>
 
