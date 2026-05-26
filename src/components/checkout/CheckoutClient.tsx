@@ -487,11 +487,16 @@ function StripeCardForm({ submitRef, onProcessing, onError }: StripeCardFormProp
   );
 }
 
-// ─── Mobile Money ─────────────────────────────────────────────────────────────
+// ─── Mobile Money — FedaPay ───────────────────────────────────────────────────
 
 const OPERATORS = [
   {
-    id: 'mtn' as MoMoOp, label: 'MTN Mobile Money', short: 'MTN MoMo',
+    id:    'mtn'  as MoMoOp,
+    label: 'MTN Mobile Money',
+    short: 'MTN MoMo',
+    color: '#FFCC00',
+    textColor: '#151515',
+    instruction: 'Une demande USSD s\'affichera sur votre téléphone. Entrez votre PIN MTN MoMo pour confirmer.',
     logo: (
       <svg width="36" height="22" viewBox="0 0 36 22" fill="none" aria-label="MTN">
         <rect width="36" height="22" rx="3" fill="#FFCC00"/>
@@ -501,7 +506,12 @@ const OPERATORS = [
     ),
   },
   {
-    id: 'moov' as MoMoOp, label: 'Moov Money', short: 'Moov',
+    id:    'moov' as MoMoOp,
+    label: 'Moov Money',
+    short: 'Moov',
+    color: '#0096D6',
+    textColor: '#ffffff',
+    instruction: 'Un code OTP vous sera envoyé par SMS. Répondez à la demande de paiement Moov Money.',
     logo: (
       <svg width="36" height="22" viewBox="0 0 36 22" fill="none" aria-label="Moov">
         <rect width="36" height="22" rx="3" fill="#0096D6"/>
@@ -511,7 +521,12 @@ const OPERATORS = [
     ),
   },
   {
-    id: 'wave' as MoMoOp, label: 'Wave', short: 'Wave',
+    id:    'wave' as MoMoOp,
+    label: 'Wave',
+    short: 'Wave',
+    color: '#1DC0FF',
+    textColor: '#ffffff',
+    instruction: 'Ouvrez l\'application Wave sur votre téléphone et confirmez la demande de paiement.',
     logo: (
       <svg width="36" height="22" viewBox="0 0 36 22" fill="none" aria-label="Wave">
         <rect width="36" height="22" rx="3" fill="#1DC0FF"/>
@@ -522,14 +537,308 @@ const OPERATORS = [
   },
 ] as const;
 
-function MobileMoneyForm() {
-  const formId = useId();
-  const [op, setOp]       = useState<MoMoOp>('mtn');
-  const [phone, setPhone] = useState('');
-  const current = OPERATORS.find((o) => o.id === op)!;
+// Phase discriminated union
+type MobilePhase =
+  | { id: 'form' }
+  | { id: 'sending' }
+  | { id: 'awaiting'; transactionId: number; phone: string; op: MoMoOp }
+  | { id: 'success' }
+  | { id: 'declined'; message: string }
+  | { id: 'error';    message: string }
+  | { id: 'timeout' };
+
+function FedaPayMobileForm() {
+  const formId   = useId();
+  const router   = useRouter();
+  const items    = useCartStore((s) => s.items);
+  const codePromo = useCartStore((s) => s.codePromo);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const { total } = useCartTotaux();
+
+  const [op,        setOp]       = useState<MoMoOp>('mtn');
+  const [phone,     setPhone]    = useState('');
+  const [phase,     setPhase]    = useState<MobilePhase>({ id: 'form' });
+  const [countdown, setCountdown] = useState(120);
+
+  const pollRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopTimers = useCallback(() => {
+    if (pollRef.current)      clearInterval(pollRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    pollRef.current = countdownRef.current = null;
+  }, []);
+
+  useEffect(() => () => stopTimers(), [stopTimers]);
+
+  const startPolling = useCallback((transactionId: number) => {
+    let attempts = 0;
+    const MAX    = 24; // 24 × 5 s = 2 minutes
+
+    // Countdown (1 s tick)
+    let remaining = 120;
+    setCountdown(remaining);
+    countdownRef.current = setInterval(() => {
+      remaining -= 1;
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        stopTimers();
+        setPhase({ id: 'timeout' });
+      }
+    }, 1000);
+
+    // Status poll (5 s tick)
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      if (attempts >= MAX) {
+        stopTimers();
+        setPhase({ id: 'timeout' });
+        return;
+      }
+      try {
+        const res  = await fetch(`/api/fedapay/status/${transactionId}`);
+        const data = await res.json() as { status?: string };
+        if (data.status === 'approved') {
+          stopTimers();
+          clearCart();
+          setPhase({ id: 'success' });
+          setTimeout(() => router.push('/checkout/confirmation'), 1800);
+        } else if (data.status === 'declined' || data.status === 'cancelled') {
+          stopTimers();
+          setPhase({ id: 'declined', message: 'Paiement refusé ou annulé par l\'opérateur.' });
+        }
+      } catch { /* continue polling */ }
+    }, 5000);
+  }, [stopTimers, clearCart, router]);
+
+  const handleSubmit = useCallback(async () => {
+    if (phase.id !== 'form') return;
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 8) return;
+
+    setPhase({ id: 'sending' });
+
+    try {
+      const res  = await fetch('/api/fedapay/transaction', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ operator: op, phone: cleanPhone, items, codePromo }),
+      });
+      const data = await res.json() as { transactionId?: number; error?: string };
+
+      if (!res.ok || !data.transactionId) {
+        setPhase({ id: 'error', message: data.error ?? 'Impossible d\'initier le paiement' });
+        return;
+      }
+
+      setPhase({ id: 'awaiting', transactionId: data.transactionId, phone: cleanPhone, op });
+      startPolling(data.transactionId);
+    } catch {
+      setPhase({ id: 'error', message: 'Erreur réseau. Vérifiez votre connexion.' });
+    }
+  }, [phase.id, phone, op, items, codePromo, startPolling]);
+
+  const handleReset = useCallback(() => {
+    stopTimers();
+    setPhase({ id: 'form' });
+    setCountdown(120);
+  }, [stopTimers]);
+
+  const currentOp = OPERATORS.find((o) => o.id === op)!;
+
+  // ── Awaiting phase: operator used when payment was sent ──
+  const awaitingOp = phase.id === 'awaiting'
+    ? OPERATORS.find((o) => o.id === phase.op)!
+    : null;
+
+  // ────────────────────────────────────────
+  //  PHASE: SUCCESS
+  // ────────────────────────────────────────
+  if (phase.id === 'success') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        className="flex flex-col items-center gap-5 py-10"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
+          className="flex size-16 items-center justify-center rounded-full bg-vert/12"
+        >
+          <Check size={32} strokeWidth={2.5} className="text-vert" aria-hidden />
+        </motion.div>
+        <div className="text-center">
+          <h3 className="font-display font-light italic text-noir text-[1.2rem]">
+            Paiement confirmé !
+          </h3>
+          <p className="mt-1.5 text-[12px] text-gris">Redirection en cours…</p>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-gris/50">
+          <Loader2 size={12} strokeWidth={1.8} className="animate-spin" aria-hidden />
+          Préparation de votre confirmation de commande
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  //  PHASE: DECLINED / ERROR / TIMEOUT
+  // ────────────────────────────────────────
+  if (phase.id === 'declined' || phase.id === 'error' || phase.id === 'timeout') {
+    const msgMap = {
+      timeout: 'La session a expiré (2 minutes). Veuillez réessayer.',
+    };
+    const message =
+      phase.id === 'timeout'
+        ? msgMap.timeout
+        : phase.message;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center gap-5 py-8"
+      >
+        <div className="flex size-14 items-center justify-center rounded-full bg-rouge/8">
+          <AlertCircle size={28} strokeWidth={1.8} className="text-rouge" aria-hidden />
+        </div>
+        <div className="text-center max-w-sm">
+          <p className="text-[12.5px] font-medium text-noir mb-1.5">
+            {phase.id === 'declined' ? 'Paiement refusé' : 'Erreur de paiement'}
+          </p>
+          <p className="text-[11.5px] text-gris leading-relaxed">{message}</p>
+        </div>
+        <motion.button
+          type="button"
+          onClick={handleReset}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          className="flex items-center gap-2 rounded-sm border border-gris-cl bg-blanc px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-gris-dark hover:border-gris hover:text-noir transition-all duration-200"
+        >
+          <RotateCcw size={11} strokeWidth={2} aria-hidden />
+          Réessayer
+        </motion.button>
+      </motion.div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  //  PHASE: AWAITING (polling for confirmation)
+  // ────────────────────────────────────────
+  if (phase.id === 'awaiting') {
+    const mins = Math.floor(countdown / 60);
+    const secs = countdown % 60;
+    const pct  = ((120 - countdown) / 120) * 100;
+    const displayPhone = `+229 ${phase.phone.replace(/(\d{2})(?=\d)/g, '$1 ')}`;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-6 py-2"
+      >
+        {/* Pulsing operator indicator */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            {/* Pulse rings */}
+            {[1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute inset-0 rounded-full border"
+                style={{ borderColor: awaitingOp!.color }}
+                animate={{ scale: [1, 1.5 + i * 0.3], opacity: [0.5, 0] }}
+                transition={{ duration: 2, delay: i * 0.5, repeat: Infinity, ease: 'easeOut' }}
+              />
+            ))}
+            <div className="relative flex size-16 items-center justify-center rounded-full bg-blanc border-2"
+              style={{ borderColor: awaitingOp!.color }}>
+              {awaitingOp!.logo}
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-[12.5px] font-medium text-noir">
+              Code envoyé sur <span className="font-semibold">{displayPhone}</span>
+            </p>
+            <p className="mt-1 text-[11px] text-gris max-w-xs mx-auto leading-relaxed">
+              {awaitingOp!.instruction}
+            </p>
+          </div>
+        </div>
+
+        {/* Countdown + progress */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-[10.5px]">
+            <span className="text-gris/70 uppercase tracking-[0.2em] font-semibold">
+              Temps restant
+            </span>
+            <span className={cn(
+              'font-mono font-bold tabular-nums',
+              countdown <= 30 ? 'text-rouge' : countdown <= 60 ? 'text-or' : 'text-noir',
+            )}>
+              {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+            </span>
+          </div>
+          {/* Progress bar */}
+          <div className="h-1 w-full rounded-full bg-beige2 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: awaitingOp!.color }}
+              initial={{ width: '0%' }}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.5, ease: 'linear' }}
+            />
+          </div>
+        </div>
+
+        {/* SMS animation indicator */}
+        <div className="flex items-center gap-3 rounded-sm border border-gris-cl/60 bg-beige/60 px-4 py-3">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <Smartphone size={16} strokeWidth={1.5} className="text-gris shrink-0" aria-hidden />
+          </motion.div>
+          <div>
+            <p className="text-[11px] font-medium text-noir">En attente de confirmation</p>
+            <p className="text-[10.5px] text-gris/70">Confirmez sur votre téléphone pour valider le paiement</p>
+          </div>
+          <div className="ml-auto flex gap-1" aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="size-1.5 rounded-full bg-gris/40"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Cancel */}
+        <button
+          type="button"
+          onClick={handleReset}
+          className="w-full text-center text-[10.5px] text-gris/50 hover:text-gris transition-colors duration-150 underline underline-offset-2"
+        >
+          Annuler et revenir au formulaire
+        </button>
+      </motion.div>
+    );
+  }
+
+  // ────────────────────────────────────────
+  //  PHASE: FORM / SENDING
+  // ────────────────────────────────────────
+  const isSending  = phase.id === 'sending';
+  const cleanPhone = phone.replace(/\D/g, '');
 
   return (
     <div className="space-y-5">
+      {/* Operator selection */}
       <div>
         <p className="mb-3 text-[9.5px] font-semibold uppercase tracking-[0.22em] text-gris/70">
           Opérateur
@@ -539,7 +848,7 @@ function MobileMoneyForm() {
             <motion.button
               key={o.id}
               type="button"
-              onClick={() => setOp(o.id)}
+              onClick={() => !isSending && setOp(o.id)}
               whileTap={{ scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               className={cn(
@@ -549,9 +858,11 @@ function MobileMoneyForm() {
                 op === o.id
                   ? 'border-or/60 bg-or/6 shadow-[0_2px_12px_rgba(184,137,58,0.12)]'
                   : 'border-gris-cl hover:border-gris',
+                isSending && 'opacity-60 cursor-not-allowed',
               )}
               aria-pressed={op === o.id}
               aria-label={o.label}
+              disabled={isSending}
             >
               {o.logo}
               <span className={cn('text-[10px] font-semibold', op === o.id ? 'text-or' : 'text-gris')}>
@@ -572,12 +883,17 @@ function MobileMoneyForm() {
         </div>
       </div>
 
+      {/* Phone input */}
       <div>
         <label htmlFor={`${formId}-phone`}
           className="mb-2 block text-[9.5px] font-semibold uppercase tracking-[0.22em] text-gris/70">
-          Numéro {current.short}
+          Numéro {currentOp.short}
         </label>
-        <div className="flex overflow-hidden rounded-sm border border-gris-cl focus-within:border-or focus-within:ring-1 focus-within:ring-or/30 transition-all duration-200">
+        <div className={cn(
+          'flex overflow-hidden rounded-sm border transition-all duration-200',
+          'focus-within:border-or focus-within:ring-1 focus-within:ring-or/30',
+          'border-gris-cl',
+        )}>
           <div className="flex items-center gap-2 border-r border-gris-cl bg-beige px-3.5 shrink-0">
             <span className="text-[11.5px] leading-none" role="img" aria-label="Bénin">🇧🇯</span>
             <span className="text-[12px] font-semibold text-gris-dark">+229</span>
@@ -589,15 +905,47 @@ function MobileMoneyForm() {
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
             placeholder="97 00 00 00"
-            className="flex-1 bg-beige px-4 py-3.5 outline-none text-[13px] font-medium text-noir placeholder:text-gris/40"
+            disabled={isSending}
+            className="flex-1 bg-beige px-4 py-3.5 outline-none text-[13px] font-medium text-noir placeholder:text-gris/40 disabled:opacity-60"
           />
         </div>
       </div>
 
+      {/* Info */}
       <div className="rounded-sm border border-gris-cl/60 bg-beige px-4 py-3 text-[11px] text-gris leading-relaxed">
-        Vous recevrez une invitation de paiement sur votre téléphone.
-        Validez avec votre code PIN {current.short} pour confirmer la commande.
+        {currentOp.instruction}
       </div>
+
+      {/* Submit */}
+      <motion.button
+        type="button"
+        onClick={handleSubmit}
+        disabled={cleanPhone.length < 8 || isSending}
+        whileTap={cleanPhone.length >= 8 && !isSending ? { scale: 0.98, y: 1 } : undefined}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        className={cn(
+          'flex w-full items-center justify-center gap-2.5 rounded-sm',
+          'py-3.5 px-6',
+          'text-[10px] font-semibold uppercase tracking-[0.24em]',
+          'transition-all duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or',
+          cleanPhone.length >= 8 && !isSending
+            ? 'bg-or text-blanc shadow-or hover:bg-or-dark hover:shadow-or-lg'
+            : 'bg-gris-cl text-gris cursor-not-allowed',
+        )}
+      >
+        {isSending ? (
+          <>
+            <Loader2 size={12} strokeWidth={2} className="animate-spin" aria-hidden />
+            Initiation du paiement…
+          </>
+        ) : (
+          <>
+            <Smartphone size={12} strokeWidth={2} aria-hidden />
+            Envoyer le code de confirmation — {total > 0 ? formatFCFA(total) : ''}
+          </>
+        )}
+      </motion.button>
     </div>
   );
 }
@@ -1031,7 +1379,7 @@ export function CheckoutClient() {
             )}
           </>
         )}
-        {method === 'mobile'   && <MobileMoneyForm />}
+        {method === 'mobile'   && <FedaPayMobileForm />}
         {method === 'paypal'   && <PayPalForm />}
         {method === 'virement' && <BankTransferForm />}
       </motion.div>
@@ -1147,28 +1495,30 @@ export function CheckoutClient() {
                   Retour au panier
                 </Link>
 
-                <motion.button
-                  type="button"
-                  onClick={handlePay}
-                  whileTap={isProcessing ? undefined : { scale: 0.98, y: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  disabled={method === 'paypal' || isProcessing || (method === 'carte' && !clientSecret)}
-                  className="flex flex-1 items-center justify-center gap-2.5 rounded-sm py-3.5 px-6 bg-or text-blanc shadow-or text-[10px] font-semibold uppercase tracking-[0.24em] hover:bg-or-dark hover:shadow-or-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 size={12} strokeWidth={2} className="animate-spin" aria-hidden />
-                      Traitement en cours…
-                    </>
-                  ) : (
-                    <>
-                      <Lock size={12} strokeWidth={2} aria-hidden />
-                      {method === 'virement'
-                        ? 'Confirmer la commande'
-                        : `Payer ${total > 0 ? formatFCFA(total) : ''}`}
-                    </>
-                  )}
-                </motion.button>
+                {method !== 'mobile' && (
+                  <motion.button
+                    type="button"
+                    onClick={handlePay}
+                    whileTap={isProcessing ? undefined : { scale: 0.98, y: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    disabled={method === 'paypal' || isProcessing || (method === 'carte' && !clientSecret)}
+                    className="flex flex-1 items-center justify-center gap-2.5 rounded-sm py-3.5 px-6 bg-or text-blanc shadow-or text-[10px] font-semibold uppercase tracking-[0.24em] hover:bg-or-dark hover:shadow-or-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 size={12} strokeWidth={2} className="animate-spin" aria-hidden />
+                        Traitement en cours…
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={12} strokeWidth={2} aria-hidden />
+                        {method === 'virement'
+                          ? 'Confirmer la commande'
+                          : `Payer ${total > 0 ? formatFCFA(total) : ''}`}
+                      </>
+                    )}
+                  </motion.button>
+                )}
               </div>
 
               <div className="mt-4 flex items-center justify-center gap-5 flex-wrap">
