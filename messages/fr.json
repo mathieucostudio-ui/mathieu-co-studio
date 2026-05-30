@@ -1,6 +1,180 @@
 {
   "Metadata": {
     "title": "Mathieu&Co Studio",
-    "description": "Studio d'architecture d'intérieur et boutique e-commerce — Cotonou, Bénin"
+    "description": "Studio d'architecture intérieure et boutique design contemporain — Cotonou, Bénin et Afrique de l'Ouest."
+  },
+  "Nav": {
+    "studio":   "Studio",
+    "galerie":  "Galerie",
+    "services": "Services",
+    "boutique": "Boutique",
+    "blog":     "Blog",
+    "contact":  "Contact",
+    "aPropos":  "À propos",
+    "compte":   "Mon compte",
+    "panier":   "Panier",
+    "login":    "Se connecter",
+    "logout":   "Se déconnecter"
+  },
+  "Home": {
+    "hero": {
+      "eyebrow":  "Architecture · Décoration · Design",
+      "title":    "Des espaces pensés pour durer",
+      "subtitle": "Studio d'architecture intérieure et boutique design contemporain. Cotonou, Bénin.",
+      "cta":      "Voir nos projets",
+      "ctaShop":  "Découvrir la boutique"
+    },
+    "stats": {
+      "years":    "8+ ans",
+      "projects": "120+ projets",
+      "countries":"15+ pays"
+    },
+    "gallery": {
+      "title":   "Nos réalisations",
+      "viewAll": "Voir toute la galerie"
+    },
+    "newsletter": {
+      "title":       "Rejoignez la communauté Mathieu&Co",
+      "subtitle":    "Tendances design, nouveautés boutique et coulisses du studio. Une fois par mois.",
+      "placeholder": "Votre adresse email",
+      "cta":         "S'abonner",
+      "success":     "Merci ! Vous êtes bien inscrit(e).",
+      "privacy":     "Pas de spam. Désinscription en un clic."
+    }
+  },
+  "Galerie": {
+    "title":    "Galerie de projets",
+    "subtitle": "Architecture intérieure, décoration contemporaine et gestion de projet.",
+    "filters": {
+      "all":          "Tous les projets",
+      "architecture": "Architecture intérieure",
+      "decoration":   "Décoration",
+      "gestion":      "Gestion de projet",
+      "boutique":     "Boutique design"
+    },
+    "empty":    "Aucun projet dans cette catégorie.",
+    "location": "Lieu",
+    "surface":  "Surface",
+    "year":     "Année"
+  },
+  "Boutique": {
+    "title":      "Boutique design",
+    "subtitle":   "Pièces sélectionnées pour enrichir votre intérieur.",
+    "addToCart":  "Ajouter au panier",
+    "buyNow":     "Acheter maintenant",
+    "outOfStock": "Rupture de stock",
+    "inStock":    "En stock",
+    "shipping":   "Livraison gratuite dès 50 000 FCFA",
+    "reviews":    "avis",
+    "from":       "À partir de"
+  },
+  "Panier": {
+    "title":         "Mon panier",
+    "empty":         "Votre panier est vide",
+    "emptyDesc":     "Découvrez notre boutique design et ajoutez vos pièces préférées.",
+    "total":         "Total",
+    "subtotal":      "Sous-total",
+    "shipping":      "Livraison",
+    "freeShipping":  "Livraison offerte",
+    "promo":         "Code promo",
+    "promoPlaceholder": "Entrez votre code",
+    "apply":         "Appliquer",
+    "checkout":      "Passer la commande",
+    "continue":      "Continuer mes achats"
+  },
+  "Checkout": {
+    "title": "Finaliser la commande",
+    "steps": {
+      "infos":        "Informations",
+      "livraison":    "Livraison",
+      "paiement":     "Paiement",
+      "confirmation": "Confirmation"
+    },
+    "methods": {
+      "card":     "Carte bancaire",
+      "mobile":   "Mobile Money",
+      "paypal":   "PayPal",
+      "transfer": "Virement"
+    },
+    "pay":    "Payer",
+    "secure": "Paiement 100% sécurisé"
+  },
+  "Contact": {
+    "title":    "Nous contacter",
+    "subtitle": "Parlons de votre projet. Réponse sous 24h.",
+    "form": {
+      "nom":       "Nom complet",
+      "email":     "Email",
+      "telephone": "Téléphone",
+      "sujet":     "Sujet",
+      "message":   "Message",
+      "send":      "Envoyer le message",
+      "success":   "Message envoyé avec succès !",
+      "error":     "Une erreur est survenue. Réessayez."
+    },
+    "address":     "Adresse",
+    "phone":       "Téléphone",
+    "hours":       "Horaires",
+    "hoursValue":  "Lun–Ven : 8h–18h, Sam : 9h–13h"
+  },
+  "Auth": {
+    "login": {
+      "title":     "Se connecter",
+      "subtitle":  "Accédez à votre espace personnel.",
+      "google":    "Continuer avec Google",
+      "email":     "Email",
+      "password":  "Mot de passe",
+      "forgot":    "Mot de passe oublié ?",
+      "submit":    "Se connecter",
+      "noAccount": "Pas encore de compte ?",
+      "register":  "Créer un compte"
+    },
+    "register": {
+      "title":     "Créer un compte",
+      "subtitle":  "Rejoignez Mathieu&Co Studio.",
+      "name":      "Nom complet",
+      "email":     "Email",
+      "password":  "Mot de passe",
+      "confirm":   "Confirmer le mot de passe",
+      "submit":    "Créer mon compte",
+      "hasAccount":"Déjà un compte ?",
+      "login":     "Se connecter"
+    }
+  },
+  "Compte": {
+    "title":     "Mon compte",
+    "commandes": "Mes commandes",
+    "wishlist":  "Ma wishlist",
+    "adresses":  "Mes adresses",
+    "securite":  "Sécurité",
+    "logout":    "Se déconnecter",
+    "noOrders":  "Aucune commande pour l'instant.",
+    "noWishlist":"Votre wishlist est vide.",
+    "noAddress": "Aucune adresse enregistrée."
+  },
+  "Footer": {
+    "tagline":      "Des espaces pensés pour durer.",
+    "studio":       "Studio",
+    "boutique":     "Boutique",
+    "informations": "Informations",
+    "rights":       "Tous droits réservés.",
+    "madeIn":       "Fait avec passion à Cotonou, Bénin"
+  },
+  "Common": {
+    "loading":  "Chargement…",
+    "error":    "Une erreur est survenue.",
+    "retry":    "Réessayer",
+    "seeAll":   "Voir tout",
+    "readMore": "Lire la suite",
+    "close":    "Fermer",
+    "back":     "Retour",
+    "next":     "Suivant",
+    "prev":     "Précédent",
+    "search":   "Rechercher",
+    "filter":   "Filtrer",
+    "sort":     "Trier",
+    "share":    "Partager",
+    "xof":      "FCFA",
+    "min":      "min de lecture"
   }
 }

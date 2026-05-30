@@ -1,6 +1,180 @@
 {
   "Metadata": {
     "title": "Mathieu&Co Studio",
-    "description": "Interior architecture studio and e-commerce — Cotonou, Benin"
+    "description": "Interior architecture studio and contemporary design boutique — Cotonou, Benin and West Africa."
+  },
+  "Nav": {
+    "studio":   "Studio",
+    "galerie":  "Gallery",
+    "services": "Services",
+    "boutique": "Shop",
+    "blog":     "Blog",
+    "contact":  "Contact",
+    "aPropos":  "About",
+    "compte":   "My Account",
+    "panier":   "Cart",
+    "login":    "Sign in",
+    "logout":   "Sign out"
+  },
+  "Home": {
+    "hero": {
+      "eyebrow":  "Architecture · Décor · Design",
+      "title":    "Spaces designed to last",
+      "subtitle": "Interior architecture studio and contemporary design boutique. Cotonou, Benin.",
+      "cta":      "View our projects",
+      "ctaShop":  "Explore the shop"
+    },
+    "stats": {
+      "years":    "8+ years",
+      "projects": "120+ projects",
+      "countries":"15+ countries"
+    },
+    "gallery": {
+      "title":   "Our work",
+      "viewAll": "View full gallery"
+    },
+    "newsletter": {
+      "title":       "Join the Mathieu&Co community",
+      "subtitle":    "Design trends, new arrivals and studio behind-the-scenes. Once a month.",
+      "placeholder": "Your email address",
+      "cta":         "Subscribe",
+      "success":     "Thank you! You're now subscribed.",
+      "privacy":     "No spam. Unsubscribe anytime."
+    }
+  },
+  "Galerie": {
+    "title":    "Project Gallery",
+    "subtitle": "Interior architecture, contemporary décor and project management.",
+    "filters": {
+      "all":          "All projects",
+      "architecture": "Interior Architecture",
+      "decoration":   "Decoration",
+      "gestion":      "Project Management",
+      "boutique":     "Design Boutique"
+    },
+    "empty":    "No projects in this category.",
+    "location": "Location",
+    "surface":  "Area",
+    "year":     "Year"
+  },
+  "Boutique": {
+    "title":      "Design Shop",
+    "subtitle":   "Curated pieces to enrich your interior.",
+    "addToCart":  "Add to cart",
+    "buyNow":     "Buy now",
+    "outOfStock": "Out of stock",
+    "inStock":    "In stock",
+    "shipping":   "Free shipping from 50,000 XOF",
+    "reviews":    "reviews",
+    "from":       "From"
+  },
+  "Panier": {
+    "title":         "My cart",
+    "empty":         "Your cart is empty",
+    "emptyDesc":     "Explore our design boutique and add your favourite pieces.",
+    "total":         "Total",
+    "subtotal":      "Subtotal",
+    "shipping":      "Shipping",
+    "freeShipping":  "Free shipping",
+    "promo":         "Promo code",
+    "promoPlaceholder": "Enter your code",
+    "apply":         "Apply",
+    "checkout":      "Proceed to checkout",
+    "continue":      "Continue shopping"
+  },
+  "Checkout": {
+    "title": "Complete your order",
+    "steps": {
+      "infos":        "Information",
+      "livraison":    "Shipping",
+      "paiement":     "Payment",
+      "confirmation": "Confirmation"
+    },
+    "methods": {
+      "card":     "Credit card",
+      "mobile":   "Mobile Money",
+      "paypal":   "PayPal",
+      "transfer": "Bank transfer"
+    },
+    "pay":    "Pay",
+    "secure": "100% secure payment"
+  },
+  "Contact": {
+    "title":    "Contact us",
+    "subtitle": "Tell us about your project. Reply within 24h.",
+    "form": {
+      "nom":       "Full name",
+      "email":     "Email",
+      "telephone": "Phone",
+      "sujet":     "Subject",
+      "message":   "Message",
+      "send":      "Send message",
+      "success":   "Message sent successfully!",
+      "error":     "Something went wrong. Please try again."
+    },
+    "address":     "Address",
+    "phone":       "Phone",
+    "hours":       "Opening hours",
+    "hoursValue":  "Mon–Fri: 8am–6pm, Sat: 9am–1pm"
+  },
+  "Auth": {
+    "login": {
+      "title":     "Sign in",
+      "subtitle":  "Access your personal account.",
+      "google":    "Continue with Google",
+      "email":     "Email",
+      "password":  "Password",
+      "forgot":    "Forgot password?",
+      "submit":    "Sign in",
+      "noAccount": "No account yet?",
+      "register":  "Create account"
+    },
+    "register": {
+      "title":     "Create account",
+      "subtitle":  "Join Mathieu&Co Studio.",
+      "name":      "Full name",
+      "email":     "Email",
+      "password":  "Password",
+      "confirm":   "Confirm password",
+      "submit":    "Create my account",
+      "hasAccount":"Already have an account?",
+      "login":     "Sign in"
+    }
+  },
+  "Compte": {
+    "title":     "My account",
+    "commandes": "My orders",
+    "wishlist":  "My wishlist",
+    "adresses":  "Addresses",
+    "securite":  "Security",
+    "logout":    "Sign out",
+    "noOrders":  "No orders yet.",
+    "noWishlist":"Your wishlist is empty.",
+    "noAddress": "No address saved."
+  },
+  "Footer": {
+    "tagline":      "Spaces designed to last.",
+    "studio":       "Studio",
+    "boutique":     "Shop",
+    "informations": "Information",
+    "rights":       "All rights reserved.",
+    "madeIn":       "Made with passion in Cotonou, Benin"
+  },
+  "Common": {
+    "loading":  "Loading…",
+    "error":    "Something went wrong.",
+    "retry":    "Try again",
+    "seeAll":   "See all",
+    "readMore": "Read more",
+    "close":    "Close",
+    "back":     "Back",
+    "next":     "Next",
+    "prev":     "Previous",
+    "search":   "Search",
+    "filter":   "Filter",
+    "sort":     "Sort",
+    "share":    "Share",
+    "xof":      "XOF",
+    "min":      "min read"
   }
 }
