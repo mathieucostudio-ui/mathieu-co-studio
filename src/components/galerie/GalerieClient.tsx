@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useId } from 'react';
 import { motion, AnimatePresence }                from 'framer-motion';
 import { ArrowUpRight, MapPin, Calendar, Maximize2 } from 'lucide-react';
+import Image                                      from 'next/image';
 import { Link }                                   from '@/i18n/navigation';
 import { cn }                                     from '@/lib/utils';
 import type { ProjetCard }                        from '@/lib/supabase/queries/projets';
@@ -108,11 +109,12 @@ function ProjectCard({ projet, index }: ProjectCardProps) {
 
           {/* Background image or placeholder */}
           {projet.image_principale ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={projet.image_principale}
               alt={projet.titre}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out-expo group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-transform duration-700 ease-out-expo group-hover:scale-105"
               loading="lazy"
             />
           ) : (

@@ -15,6 +15,7 @@
 import { memo, useState, useCallback } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { ShoppingBag, Heart, Eye, Tag } from 'lucide-react';
+import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { Badge }  from '@/components/ui';
 import { cn }     from '@/lib/utils';
@@ -123,18 +124,18 @@ export const ProduitCard = memo(function ProduitCard({
       <div className="relative h-[220px] overflow-hidden">
         {/* Image ou placeholder */}
         {firstImage?.url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={firstImage.url}
-            alt={firstImage.alt || produit.nom}
-            className={cn(
-              'absolute inset-0 h-full w-full object-cover',
-              'transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]',
-              'group-hover:scale-[1.04]',
-            )}
-            loading="lazy"
-            decoding="async"
-          />
+            <Image
+              src={firstImage.url}
+              alt={firstImage.alt || produit.nom}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className={cn(
+                'object-cover',
+                'transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]',
+                'group-hover:scale-[1.04]',
+              )}
+              loading="lazy"
+            />
         ) : (
           <div
             className={cn(
