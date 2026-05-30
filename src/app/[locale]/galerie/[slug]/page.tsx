@@ -30,6 +30,7 @@ import type { ProjetCard }       from '@/lib/supabase/queries/projets';
 import type { CategorieProjet }  from '@/types/database';
 import { ProjetHeroGallery }     from '@/components/galerie/ProjetHeroGallery';
 import { AvantApres }            from '@/components/galerie/AvantApres';
+import { ProjectSchema, BreadcrumbSchema } from '@/components/seo/JsonLd';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -97,8 +98,28 @@ export default async function ProjetDetailPage({ params }: Props) {
   // Location string
   const location = [projet.lieu ?? projet.ville, projet.pays].filter(Boolean).join(', ');
 
+  const heroImage = allImages.find((img) => img.type !== 'avant' && img.type !== 'apres')?.url
+    ?? projet.image_principale
+    ?? null;
+
   return (
     <div className="min-h-[100dvh] bg-blanc">
+
+      {/* JSON-LD */}
+      <ProjectSchema
+        titre={projet.titre}
+        description={projet.description}
+        slug={projet.slug}
+        image={heroImage}
+        categorie={projet.categorie}
+        lieu={location}
+        annee={projet.annee}
+      />
+      <BreadcrumbSchema items={[
+        { label: 'Accueil', href: '/' },
+        { label: 'Galerie', href: '/galerie' },
+        { label: projet.titre, href: `/galerie/${projet.slug}` },
+      ]} />
 
       {/* ── Breadcrumb bar ───────────────────────────────────────────────────── */}
       <div className="border-b border-gris-cl/60 bg-blanc">

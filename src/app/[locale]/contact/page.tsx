@@ -21,6 +21,7 @@ import type { Metadata }    from 'next';
 import { setRequestLocale }  from 'next-intl/server';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { ContactForm }       from '@/components/contact/ContactForm';
+import { LocalBusinessSchema } from '@/components/seo/JsonLd';
 
 // ─── Métadonnées ──────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export default async function ContactPage({ params }: Props) {
 
   return (
     <div className="min-h-[100dvh]">
+      <LocalBusinessSchema />
       {/* Hero */}
       <ContactHero />
 
